@@ -1,109 +1,109 @@
-# Relatório da missão documental
+# Relatório de entrega documental
 
-Data da inspeção e entrega: **13/09/2026**. [Índice](../README.md) · [Matriz de rastreabilidade](rastreabilidade.md)
+[Índice](README.md) · [Rastreabilidade](rastreabilidade.md) · [Orientação de construção](arquitetura-e-padroes.md#orientacao-construcao)
 
 ## 1. Resumo da entrega
 
-Foi lido integralmente o prompt em `/home/arthur/Projetos/tag-file/prompts/prompt-documentacao-tag-file.md` e inspecionado o repositório real em `/home/arthur/IdeaProjects/tag-file`. A documentação foi criada exclusivamente em `/home/arthur/IdeaProjects/tag-file/doc`. O diretório que contém o prompt é distinto da raiz do projeto.
+Foi lida integralmente a versão atual de `/home/arthur/Projetos/tag-file/prompts/prompt-documentacao-tag-file.md`, com 1.998 linhas, e produzida a documentação de projeto em `/home/arthur/IdeaProjects/tag-file/doc`. A fonte externa e a raiz de trabalho são diretórios diferentes.
 
-A entrega organiza regras aprovadas, consequências derivadas, propostas, pendências, limitações e implementação observada. Não havia documentação anterior em `doc` para atualizar. As instruções e os arquivos existentes foram considerados antes da escrita; não foi encontrado impedimento local à missão.
+A premissa desta entrega é **documentação antes da implementação**, para orientar a equipe de estudantes. O conteúdo explica as partes a construir, seus dados, responsabilidades, colaborações e resultados esperados. A ausência de classes ou scripts não foi tratada como defeito, divergência ou pendência de modelagem.
+
+A skill OpenAI Docs foi consultada conforme solicitação. Para esta tarefa genérica de documentação de software, sua orientação é tratar a tarefa diretamente; a fonte normativa do Tag-File permanece a especificação local. Não foi necessário pesquisar tópicos de produtos OpenAI ou introduzir requisitos de APIs externas.
 
 ## 2. Arquivos produzidos
 
-Todos os arquivos abaixo foram **criados** nesta missão; nenhum arquivo de implementação foi produzido.
+A pasta `doc` não estava presente na árvore de trabalho no início desta execução. Foram criados os 13 Markdown abaixo, incorporando a revisão atual da especificação. A indicação “criado” refere-se à escrita no diretório de trabalho desta execução, sem alterar o índice do Git.
 
-| Arquivo relativo à raiz | Finalidade |
-|---|---|
-| [doc/README.md](../README.md) | Índice, ordem de leitura, proveniência, estados e limites DOC-01 a DOC-04. |
-| [doc/visao-geral.md](visao-geral.md) | Objetivo, contexto, evolução do escopo, restrições e glossário. |
-| [doc/requisitos-e-regras.md](requisitos-e-regras.md) | Regras de Tags, extensões, registros, operações, exclusões, atualização e falhas. |
-| [doc/casos-de-uso.md](casos-de-uso.md) | UC-01 a UC-15, com alternativas, efeitos, cancelamento e falhas. |
-| [doc/modelo-de-dominio.md](modelo-de-dominio.md) | Entidades, atributos, UUID, composição e ciclo de vida. |
-| [doc/banco-de-dados.md](banco-de-dados.md) | Modelo lógico, dicionário, chaves, relações, DAOs e decisões físicas abertas. |
-| [doc/arquitetura-e-padroes.md](arquitetura-e-padroes.md) | Colaborações, Command, Observer, Factory simples, DAO, CRUD e GRASP. |
-| [doc/interface-e-fluxos.md](interface-e-fluxos.md) | Exploradores, filtros/AND/OR/Map, eventos, Drop, Loading e diálogos. |
-| [doc/instalacao-e-execucao.md](instalacao-e-execucao.md) | Ambiente planejado, configuração observada, preparação/reutilização e encerramento. |
-| [doc/criterios-de-aceite.md](criterios-de-aceite.md) | 24 cenários de verificação futura, todos não executados. |
-| [doc/decisoes-e-pendencias.md](decisoes-e-pendencias.md) | Revisões históricas, propostas, 13 pendências e quatro lacunas da implementação. |
-| [doc/rastreabilidade.md](rastreabilidade.md) | Inventário dos 41 temas, comparação por regra, casos, aceite e evidências reais. |
-| [doc/relatorio-entrega.md](relatorio-entrega.md) | Registro desta entrega e dos limites da validação. |
-
-## 3. Cobertura
-
-Foram cobertos os **41 temas** do inventário original, **67 identificadores de regras** dos grupos OBJ, DOC, DOM, TAG, EXT, CIC, OP, DEL, EXP, UI, SYN, ERR, ARQ, SQL e AMB, **15 casos de uso** e **24 cenários derivados de aceite**. P-01 a P-13 foram preservadas, sem renumeração ou resolução editorial. Os documentos principais e a evidência disponível estão ligados em [rastreabilidade](rastreabilidade.md).
-
-As restrições de escopo estão explícitas: sem Maven, pool, controle explícito de transações, Undo/Redo, clipboard do sistema, monitoramento contínuo, classe `ExplorerEvent`, `schema_history`, Factory Native, contador persistido de disponíveis ou NOT. Diretórios servem à navegação/destino; operações recursivas e etiquetação de pastas não foram acrescentadas. Nuvem, conteúdo binário no MySQL e contas do aplicativo não foram inventados.
-
-## 4. Comparação com o repositório
-
-[src/Main.java](../src/Main.java), símbolo `Main.main`, contém apenas a saudação e um laço de 1 a 5 do template da IDE. Não foram encontrados outros fontes, telas, modelos, Commands, Services, DAOs, SQL, scripts administrativos ou JAR do driver no inventário do projeto.
-
-| Registro | Regras relacionadas | Diferença documentada e evidência |
+| Arquivo relativo à raiz | Ação | Finalidade |
 |---|---|---|
-| [DIV-001](decisoes-e-pendencias.md#div-001) | DOM, TAG, EXT, CIC, OP, DEL | Domínio e operações planejados sem implementação; único fonte é `src/Main.java`. |
-| [DIV-002](decisoes-e-pendencias.md#div-002) | EXP, UI, SYN, ERR, ARQ | Exploradores, padrões e coordenação ausentes do fonte observado. Diagramas são planejamento. |
-| [DIV-003](decisoes-e-pendencias.md#div-003) | SQL-01 a SQL-06, ARQ-04/ARQ-08, AMB-05 | Nenhum SQL, DAO ou conexão encontrado; `tag-file.iml` só declara fontes e JDK herdado. |
-| [DIV-004](decisoes-e-pendencias.md#div-004) | AMB-01 a AMB-07 | Não há `database`, scripts ou driver. `.gitignore` não tem política específica para o ambiente futuro. |
+| [doc/README.md](README.md) | Criado nesta execução | Índice, legenda de estados, limites e ordem de leitura. |
+| [doc/visao-geral.md](visao-geral.md) | Criado nesta execução | Objetivos, contexto acadêmico, funcionalidades, restrições e glossário. |
+| [doc/requisitos-e-regras.md](requisitos-e-regras.md) | Criado nesta execução | Regras funcionais com condições, efeitos, exemplos e pendências. |
+| [doc/casos-de-uso.md](casos-de-uso.md) | Criado nesta execução | [UC-01](casos-de-uso.md#uc-01) a [UC-15](casos-de-uso.md#uc-15), alternativas, efeitos e falhas. |
+| [doc/modelo-de-dominio.md](modelo-de-dominio.md) | Criado nesta execução | Representações, atributos, identidade, composição e ciclo de vida. |
+| [doc/banco-de-dados.md](banco-de-dados.md) | Criado nesta execução | Modelo lógico, dicionário, cardinalidades, DAOs e decisões físicas abertas. |
+| [doc/arquitetura-e-padroes.md](arquitetura-e-padroes.md) | Criado nesta execução | Responsabilidades, chamadas diretas, Observer, GRASP e orientação de construção. |
+| [doc/interface-e-fluxos.md](interface-e-fluxos.md) | Criado nesta execução | Exploradores, filtros, consultas, Drop, diálogos, Loading e apresentação. |
+| [doc/instalacao-e-execucao.md](instalacao-e-execucao.md) | Criado nesta execução | Ambiente de referência e papel dos futuros scripts e configurações. |
+| [doc/criterios-de-aceite.md](criterios-de-aceite.md) | Criado nesta execução | [ACE-01](criterios-de-aceite.md#ace-01) a [ACE-24](criterios-de-aceite.md#ace-24), com condição, passos futuros, resultado e limites. |
+| [doc/decisoes-e-pendencias.md](decisoes-e-pendencias.md) | Criado nesta execução | Histórico, [DEC-01](decisoes-e-pendencias.md#dec-01) encerrada, propostas e [P-01](decisoes-e-pendencias.md#p-01) a [P-13](decisoes-e-pendencias.md#p-13). |
+| [doc/rastreabilidade.md](rastreabilidade.md) | Criado nesta execução | Relações entre regras, participantes, casos, aceite e pendências. |
+| [doc/relatorio-entrega.md](relatorio-entrega.md) | Criado nesta execução | Registro desta entrega e de sua validação exclusivamente documental. |
 
-A configuração [.idea/misc.xml](../.idea/misc.xml), `ProjectRootManager`, usa `JDK_24` e `corretto-24`, em alinhamento com o contexto de AMB-06. Isso comprova configuração da IDE, sem certificar SDK instalado ou execução. O módulo [tag-file.iml](../tag-file.iml) não declara Connector/J. Ausência de arquivo no projeto não prova ausência de MySQL ou Java no computador; serviços e instalações externas não foram sondados para esta missão.
+## 3. Cobertura e rastreabilidade
 
-## 5. Pendências preservadas
+A entrega cobre os **41 temas** do inventário, **67 regras** dos grupos OBJ, DOC, DOM, TAG, EXT, CIC, OP, DEL, EXP, UI, SYN, ERR, ARQ, SQL e AMB, **[DEC-01](decisoes-e-pendencias.md#dec-01)**, **15 casos de uso** e **24 critérios de aceite**. Há ainda **13 pendências explícitas**. A matriz relaciona regra/estado, elementos aprovados, fluxo, aceite, seção documental e limite de definição.
 
-**P-01, P-02 e P-03 não foram resolvidas pela exportação do prompt nem por esta documentação.** As perguntas completas, partes confirmadas e dependências estão no [registro de pendências](decisoes-e-pendencias.md#p-01).
+A orientação de construção cobre sete blocos: representações e identidade; classificação e consultas; ambiente/persistência; operações nativas/ciclo de vida; coordenação/notificações; interface/integração; verificação futura. Os percursos de associar arquivo, recortar/colar entre exploradores e Refresh explicam os colaboradores e os efeitos no disco, banco e apresentação.
 
-| ID | O que continua aberto |
+As restrições foram preservadas: sem Maven, pool, controle explícito de transações, Undo/Redo, clipboard do sistema, monitoramento contínuo, classe ExplorerEvent, schema_history, Factory Native, contador persistido de disponíveis ou NOT. Diretórios servem à navegação/destino, sem novas operações recursivas ou classificação automática. A simplificação de [DEC-01](decisoes-e-pendencias.md#dec-01) não acrescenta padrões ou camadas compensatórias.
+
+## 4. Como usar para começar
+
+Começar por [visão geral](visao-geral.md), [regras](requisitos-e-regras.md) e [casos de uso](casos-de-uso.md). Consultar [domínio](modelo-de-dominio.md) e [banco](banco-de-dados.md) para compreender dados, identidade e relações. Em seguida, usar a [orientação para a implementação futura](arquitetura-e-padroes.md#orientacao-construcao), que apresenta finalidade, entradas/resultados, colaboradores, limites e exemplos concretos.
+
+A leitura de interface e ambiente completa o desenho; os critérios de aceite indicam o que deverá ser observado depois da implementação. A sequência é didática, sem cronograma, responsáveis ou ferramentas de desenvolvimento novos. As pendências devem ser consultadas antes de fixar os contratos que dependem delas.
+
+## 5. Decisões encerradas e pendências
+
+**[DEC-01](decisoes-e-pendencias.md#dec-01) permanece confirmada e encerrada:** as operações são coordenadas pelos Controllers por chamadas diretas aos Managers/Services existentes. Essa decisão preserva as funcionalidades e a publicação por ExplorerEventService. A referência histórica à estrutura anterior ficou somente no registro de decisões.
+
+**[P-01](decisoes-e-pendencias.md#p-01), [P-02](decisoes-e-pendencias.md#p-02) e [P-03](decisoes-e-pendencias.md#p-03) não foram resolvidas pela exportação ou pela documentação.** [P-01](decisoes-e-pendencias.md#p-01) mantém aberta a identidade na cópia/substituição e o registro de cópia sem Tags. [P-02](decisoes-e-pendencias.md#p-02) mantém aberto o alcance da modalidade 2 e da remoção explícita frente à sentinela, além do destino da Tag selecionada. [P-03](decisoes-e-pendencias.md#p-03) mantém aberto o efeito automático de silenciar sugestões durante a sessão.
+
+| Pendência | Partes afetadas / definição restante |
 |---|---|
-| P-01 | UUID/associações após cópia com substituição e existência de registro para cópia sem Tags. |
-| P-02 | Remoção imediata de registros versus sentinela na modalidade 2; destino da Tag selecionada; coerência da remoção explícita do Tag-File. |
-| P-03 | Silenciar sugestões sem associação automática versus repetir a escolha durante a sessão. |
-| P-04 | Composição Panels/Screens e formalização das Screens observadoras. |
-| P-05 | Assinaturas/retorno da consulta de arquivos por Tags e eventos de arquivos nativos sem cadastro. |
-| P-06 | DDL físico, tipos UUID, limites, nulabilidade, índices, collation, nome de tabela de extensões e cascatas. |
-| P-07 | Identificação e editabilidade da Tag de sistema; preparação de predefinidas. |
-| P-08 | Caminhos equivalentes, links, conflitos, extensões especiais e colisão na relocalização. |
-| P-09 | Comparação/validação de nomes, formato hexadecimal e padrões de cor. |
-| P-10 | Metadados ausentes, conversão temporal e efeitos sobre `lastFileTaggedAt`. |
-| P-11 | Versões, instaladores, schema/reaplicação, identificação da instância e encerramento. |
-| P-12 | Lotes, seleção geral, clipboard após colagem, reentrância e exibição lado a lado. |
-| P-13 | Consulta sem Tags selecionadas, estados vazios e ordenação padrão. |
+| [P-04](decisoes-e-pendencias.md#p-04) | Composição Panels/Screens e formalização das Screens observadoras. |
+| [P-05](decisoes-e-pendencias.md#p-05) | API/retorno da consulta de arquivos por Tags e eventos de NativeFile sem registro. |
+| [P-06](decisoes-e-pendencias.md#p-06) | DDL físico, UUID SQL, nulabilidade, limites, índices, collation, nome de extensões e cascatas. |
+| [P-07](decisoes-e-pendencias.md#p-07) | Identificação/editabilidade da sentinela e preparação de predefinidas. |
+| [P-08](decisoes-e-pendencias.md#p-08) | Caminhos equivalentes, links, conflitos, extensões especiais e colisão ao relocalizar. |
+| [P-09](decisoes-e-pendencias.md#p-09) | Comparação e validação de nomes, cores, formato hexadecimal e defaults. |
+| [P-10](decisoes-e-pendencias.md#p-10) | Ausência de metadados, conversão temporal e efeitos em lastFileTaggedAt. |
+| [P-11](decisoes-e-pendencias.md#p-11) | Versões, instaladores, detecção, reaplicação de schema e encerramento. |
+| [P-12](decisoes-e-pendencias.md#p-12) | Seleção geral/lotes, clipboard após colagem, reentrância e exibição lado a lado. |
+| [P-13](decisoes-e-pendencias.md#p-13) | Consulta sem Tags selecionadas, estados vazios e ordenação padrão. |
 
-## 6. Validação documental
+As partes confirmadas permanecem explicadas independentemente dessas escolhas: UUID separado de caminho, sentinela na reorganização, limpeza só na inicialização, extensões múltiplas, AND/OR, consulta em lote, fluxo direto de operações e núcleo Observer. Nenhuma classe ainda por escrever foi listada como pendência.
 
-A validação automática documental usou Python e o parser `markdown_it` já disponível, em modo CommonMark com suporte a tabelas. Não houve instalação de ferramenta. Foram conferidos **946 links locais**, dos quais **788 apontam para fragmentos**, sem destino ou âncora inexistente; os **119 IDs da fonte** (67 regras, 15 UC, 24 ACE e 13 P) possuem uma única âncora canônica no documento responsável. Os quatro DIV novos têm identificação própria.
+## 6. Verificações documentais realizadas
 
-Também foram verificados os 41 temas da matriz, 24 rótulos individuais de **NÃO EXECUTADO**, cercas de código pareadas, estrutura das tabelas e títulos reconhecidos pelo parser. Os exemplos foram lidos contra as regras de origem. Diagramas de domínio, relações, sentinela, operações, consulta/Map, Observer, Refresh e responsabilidades do banco foram conferidos textualmente.
+A conferência usou Python e o parser `markdown_it` já disponível, com leitura CommonMark e suporte a tabelas. Foram verificados **1.286 links locais**, dos quais **1.173 incluem fragmentos**, sem arquivos ou âncoras inexistentes. Todos os links de navegação apontam para documentos efetivamente produzidos em `doc`.
 
-**Limite dos diagramas:** há **11 blocos Mermaid**. O comando `mmdc` não está disponível no PATH; não foi instalado renderer nem executada renderização gráfica ou validação por um parser Mermaid. A conferência dos tipos de bloco e das cercas foi automática; a revisão de setas, rótulos, cardinalidades e coerência com as pendências foi textual. Não se afirma aparência gráfica validada.
+Os **120 identificadores da fonte** têm uma única âncora canônica: 67 regras, DEC-01, 15 UC, 24 ACE e 13 P. Os 41 temas do inventário foram mantidos. Cada ACE possui condição, passos futuros, resultado e indicação individual de não execução. A orientação de construção contém os sete blocos e os três percursos exigidos, com referência a partir do README.
 
-A comparação SHA-256 confirmou que os **sete arquivos preexistentes no índice do Git mantiveram o conteúdo** registrado antes da escrita. Seu estado inicial `A` no índice foi preservado; o Git mostra somente os 13 novos Markdown em `doc` como arquivos não rastreados adicionais. O conteúdo do prompt de origem também conservou seu digest. Isso registra o limite efetivo da missão, sem atribuir à documentação mudanças de estado local ignorado da IDE.
+Também foram conferidas a estrutura das tabelas, as cercas de exemplos e os títulos reconhecidos pelo parser. A busca transversal de nomes confirmou que a estrutura retirada em DEC-01 aparece exclusivamente como histórico/correção de nomenclatura no registro de decisões. Os modelos e fluxos vigentes usam a colaboração direta prevista em ARQ-03, sem novos participantes compensatórios.
 
-A revisão abaixo aplica os 14 pontos de auditoria transversal exigidos. “Conferido” significa consistência documental, não comportamento executado.
+**Limite dos diagramas:** os **oito blocos Mermaid** foram revisados textualmente quanto a participantes, setas, cardinalidades, rótulos e pendências. O comando `mmdc` não está disponível no PATH; não houve instalação, renderização gráfica nem validação por um parser Mermaid. As checagens automáticas cobriram tipo do bloco e cercas; a coerência das colaborações foi conferida por leitura. O diagrama de colagem explicita que LocalFileManager coordena separadamente NativeFileService e DAOs, sem atribuir SQL ao serviço nativo.
 
-| Ponto | Resultado da conferência textual |
+**Preservação:** os hashes SHA-256 dos sete arquivos existentes fora de `doc` e o conteúdo do índice do Git coincidem com o registro inicial desta execução. O digest da fonte também foi preservado. A escrita criou somente os 13 Markdown em `doc`; as remoções previamente preparadas no índice, inclusive a do README da raiz, não foram alteradas. Estado local ignorado da IDE não foi tratado como parte dessa comparação de conteúdo do projeto.
+
+A revisão transversal exigida pela fonte foi realizada como verificação documental, sem afirmar funcionamento:
+
+| Ponto | Resultado da revisão |
 |---|---|
-| 1. Identidade | DOM-02, OP-03/OP-04, UC-08/UC-09 e diagramas distinguem UUID de caminho. Mover preserva identidade; cópia/substituição continua em P-01. |
-| 2. Registro versus arquivo físico | DOM-01, UC-02 e DEL-01 a DEL-03 distinguem associação, registro e disco. Navegação não cadastra tudo; Native sem cadastro continua representável. |
-| 3. Ciclo de vida | CIC-01 a CIC-03 e o diagrama separam sentinela na sessão de limpeza na abertura. Reconexão/Refresh não limpam; limpeza não prova existência física nem recupera arquivo ausente. |
-| 4. Tags vazias | TAG-03 e ACE-14 distinguem zero associações de zero disponíveis e preservam a proteção da sentinela vazia. |
-| 5. Extensões | EXT-01 a EXT-03 e ACE-04 a ACE-08 preservam múltiplas extensões específicas, normalização, unicidade por Tag e avaliação do conjunto final. Nenhuma extensão configurada significa irrestrita. |
-| 6. Operações | Drop tem Tag como alvo, cópia pergunta sobre Tags, clipboard é interno, mover preserva UUID e os diálogos mantêm confirmação e pendências no ponto de uso. |
-| 7. Consultas | EXP-02 a EXP-04 distinguem AND/OR, Map e retorno de arquivos versus Tags; NOT excluído. Command atua sobre seleção, sem reexecutar filtro para redefini-la. |
-| 8. Arquitetura | ARQ-01 e ARQ-05 a ARQ-08 mantêm Screen ligando componentes, Controller coordenando/publicando, DAOs sem UI e NativeFileService sem SQL. Managers têm assuntos distintos. |
-| 9. Padrões | ARQ-09 distingue GoF Command/Observer, Factory simples, DAO, CRUD e GRASP. Herança de Filter e nome Manager não acrescentam padrões. |
-| 10. Atualização | SYN-01 a SYN-03 e os diagramas mostram todos os LocalFile no Refresh completo, verificação pontual ao usar, botão único e ausência de ciclo por notificação. Navegação não sincroniza globalmente a cada pasta. |
-| 11. Persistência | SQL-01 a SQL-06 mantêm modelo lógico separado do DDL não homologado, ausência de transações explícitas e nenhuma cascata/trigger ou atomicidade inventada. |
-| 12. Ambiente | AMB-01 a AMB-07 preservam database relativo à raiz, runtime/data, porta 3333, conta didática exclusiva e reutilização de dados. Maven, pool e schema_history permanecem excluídos. |
-| 13. Falhas | UI-03, ERR-01 e UC-15 distinguem Loading de conclusão, mostram resultado parcial e não atribuem repetição/reversão garantida a autoReconnect. |
-| 14. Documentação versus implementação | Todos os assuntos distinguem planejamento do Main inicial observado. P-01 a P-13 continuam abertas; cenários, procedimentos e diagramas não alegam execução. |
+| 1. Identidade | UUID permanece separado do caminho. Mover preserva identidade; cópia/substituição e cópia sem Tags continuam em P-01. |
+| 2. Registro e disco | Navegação não cria LocalFile para todos os arquivos. Associação, registro e arquivo físico têm efeitos distintos. |
+| 3. Ciclo de vida | Sentinela na reorganização; limpeza somente na inicialização. Refresh e reconexão não limpam. Disponibilidade não é classificação. |
+| 4. Tags vazias | Zero disponíveis não equivale a zero associações. Etiqueta Ausente continua protegida mesmo vazia. |
+| 5. Extensões | Múltiplas, específicas, normalizadas e únicas por Tag; ausência de restrição aceita qualquer. Edição considera o conjunto final. |
+| 6. Operações | Drop sobre a Tag, pergunta de herança, clipboard interno, UUID preservado ao mover e confirmações coerentes. P-01/P-02/P-03 visíveis nos fluxos afetados. |
+| 7. Consultas | AND/OR sem NOT, Map enriquece a visão local, consulta de Tag não retorna LocalFile. Operação usa seleção confirmada sem refazer filtros para alterá-la. |
+| 8. Arquitetura | Screens ligam componentes; Controllers chamam Managers/Services e publicam; DAOs não publicam UI; NativeFileService não assume SQL. Managers mantêm seus assuntos específicos. |
+| 9. Padrões | Observer, Factory simples, DAO, CRUD e GRASP estão distinguidos. DEC-01 não foi reaberta nem compensada com padrão novo. |
+| 10. Atualização | Refresh completo atualiza todos os LocalFile uma vez por solicitação; verificação ao usar é pontual. Navegação de pasta não sincroniza globalmente; Observer não reinicia Refresh. |
+| 11. Persistência | Modelo lógico separado do DDL parcialmente aberto; sem transações explícitas, cascatas/triggers inventados ou atomicidade entre disco e banco. |
+| 12. Ambiente | database relativo à raiz, dados em runtime/data, porta 3333, conta didática local e reutilização de dados. Versões/comandos abertos não foram escolhidos. |
+| 13. Falhas | Loading indica operação em andamento; falha apresenta concluído, erro e detalhes. Reconexão não garante repetição, reversão ou conclusão. |
+| 14. Documentação anterior à implementação | As páginas orientam a futura construção e distinguem aprovação, proposta, pendência e exemplo. Ausência de código não foi transformada em divergência ou falha de aceite. |
 
-Uma revisão independente de visão geral, índice, decisões e matriz não encontrou inconsistências materiais com a fonte. Na revisão dos modelos, foram esclarecidos o estado físico ainda não homologado e a independência entre limpeza de registro e existência do arquivo. A redação final e os links foram reconferidos após a integração dos documentos.
+A coerência dos exemplos foi revista contra as regras consolidadas. As verificações documentais não demonstram responsividade Swing, resultado de SQL, operação de arquivos ou funcionamento de scripts; esses resultados pertencem à validação futura da equipe.
 
-## 7. O que não foi executado
+## 7. Limite de atuação
 
-Não houve compilação, build, execução da aplicação, testes funcionais ou de implementação, instalação de ferramentas/pacotes/driver, elevação administrativa, início/parada de serviços, execução de scripts PowerShell/Bash operacionais, conexão de teste com MySQL ou aplicação de SQL. Dados e arquivos físicos do usuário não foram manipulados pelo aplicativo. Nenhuma funcionalidade, dependência, schema ou configuração operacional foi alterada.
+Foram produzidos apenas documentos em `doc`. Não foram criados código Java, testes executáveis, dependências, configurações de IDE/conexão, scripts operacionais ou schemas reais. Não houve instalação, elevação administrativa, execução de PowerShell/Bash operacional, SQL, migração, serviço, aplicação, compilação, build ou teste funcional. Os cenários e procedimentos são futuros.
 
-Não foram realizados commits, publicação ou alteração do estágio dos sete arquivos preexistentes no Git. A validação usou leitura e verificações documentais; não serve de homologação da aplicação ou dos procedimentos operacionais.
+As mudanças já preparadas no Git foram preservadas; não houve commit, alteração do estágio, publicação ou restauração de arquivos fora de `doc`. As verificações de preservação são documentais, sem auditoria de comportamento do sistema.
 
-## 8. Estado final
+## 8. Resultado final
 
-A parte documental possível está concluída, com cobertura do inventário e pendências explícitas. O sistema planejado continua sem implementação correspondente no repositório além do template inicial. Permanecem P-01 a P-13; os 24 cenários de aceite estão **não executados**. Não há alegação de modelo totalmente fechado, scripts testados ou funcionamento verificado.
+A documentação possível está concluída para orientar a construção futura, com [DEC-01](decisoes-e-pendencias.md#dec-01) encerrada e [P-01](decisoes-e-pendencias.md#p-01) a [P-13](decisoes-e-pendencias.md#p-13) abertas nos pontos afetados. Os cenários de aceite estão não executados. A entrega é a referência de requisitos, dados, arquitetura e fluxos, sem alegar aplicação pronta, DDL totalmente homologado ou decisões integralmente fechadas.

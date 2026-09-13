@@ -1,71 +1,81 @@
-# Requisitos e regras do Tag-File
+# Requisitos e regras
 
-[Índice da documentação](../README.md) · [Casos de uso](casos-de-uso.md) · [Interface](interface-e-fluxos.md)
+[Índice](README.md) · [Rastreabilidade](rastreabilidade.md) · [Decisões e pendências](decisoes-e-pendencias.md)
 
-Este é o documento principal das regras `TAG`, `EXT`, `CIC`, `OP`, `DEL`, `SYN` e `ERR`. Ele descreve o comportamento planejado da especificação consolidada, com o estado de cada decisão. Os fluxos operacionais fazem referência a essas regras em [casos de uso](casos-de-uso.md). A legenda dos estados está no [índice](../README.md).
+Esta é a referência principal dos grupos TAG, EXT, CIC, OP, DEL, SYN e ERR. **O presente é normativo:** descreve o comportamento que a equipe deverá implementar. Gatilhos, condições e efeitos abaixo definem o projeto; os exemplos são ilustrativos, sem execução. As pendências são decisões abertas, não a falta esperada de código.
 
-**Estado observado:** [src/Main.java](../src/Main.java) contém somente o exemplo inicial de console, com uma saudação e laço de 1 a 5. A inspeção não encontrou implementação de Tags, exploradores, operações físicas, persistência ou sincronização. Nenhum resultado abaixo deve ser interpretado como funcionalidade já implementada ou teste aprovado.
-
-O [modelo de domínio](modelo-de-dominio.md#dom-01) distingue arquivo físico (`NativeFile`), diretório (`NativeDirectory`), registro (`LocalFile`) e associação com `Tag`. UUID identifica o registro; caminho é localização alterável e única no banco ([DOM-02](modelo-de-dominio.md#dom-02)). Os exemplos são didáticos e não foram executados.
-
-## Tags e extensões
+Arquivo físico, registro e associação são conceitos distintos de [DOM-01](modelo-de-dominio.md#dom-01). UUID identifica o registro; caminho indica sua localização ([DOM-02](modelo-de-dominio.md#dom-02)). Os fluxos completos estão em [casos de uso](casos-de-uso.md).
 
 <a id="tag-01"></a>
 
-### TAG-01 — Criação, edição e nomes repetidos
+## TAG-01 — Criação, edição e nomes repetidos
 
 **Estado: confirmada.**
 
-O usuário pode criar Tags próprias e configurar nome, cor hexadecimal e extensões permitidas. Pode editar a classificação, respeitando os efeitos de alterações de extensão em [EXT-03](#ext-03).
+O usuário pode criar Tags próprias e configurar nome, cor hexadecimal e extensões permitidas. Pode editar a classificação, respeitando os efeitos das alterações de extensão descritos em [EXT-03](requisitos-e-regras.md#ext-03).
 
-O nome de uma Tag **não é UNIQUE**. Ao detectar nome já existente, a UI deve pedir confirmação e permitir criar mesmo assim. A nova Tag possui outra identidade, mesmo com o mesmo nome.
+O nome de uma Tag **não é UNIQUE**. Ao detectar um nome já existente, a UI deve pedir confirmação e permitir criar mesmo assim. A nova Tag possui outra identidade, mesmo com o mesmo nome.
 
-**Proposta não aprovada:** comparar nomes ignorando maiúsculas/minúsculas e espaços nas extremidades. A regra exata de comparação, validação de nome vazio, formato hexadecimal, cor padrão e obrigação de escolha continuam em [P-09](decisoes-e-pendencias.md#p-09).
+A comparação que ignora maiúsculas/minúsculas e espaços nas extremidades foi uma proposta, não uma regra final homologada. Essa normalização não é requisito confirmado.
 
-**Consequência derivada:** ações e relações identificam a Tag por UUID, não apenas por nome. Isso também vale para predefinidas e para a Tag de sistema.
+**Consequência derivada:** ações e relações devem identificar a Tag por UUID, não apenas pelo texto do nome. Isso também afeta Tags predefinidas e a Tag de sistema.
 
 <a id="tag-02"></a>
 
-### TAG-02 — Tags predefinidas
-
-**Estado: confirmada quanto aos nomes e à proteção.**
-
-Os nomes aprovados são `Imagens`, `PDF`, `Audios`, `Videos` e `Etiqueta Ausente`. As quatro primeiras podem ser apagadas com confirmação reforçada; `Etiqueta Ausente` não pode ser apagada pelo usuário.
-
-**Exemplos de extensões iniciais discutidos, sem catálogo completo homologado:**
-
-| Tag | Extensões de exemplo |
-|---|---|
-| Imagens | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp` |
-| PDF | `.pdf` |
-| Audios | `.mp3`, `.wav`, `.flac`, `.aac` |
-| Videos | `.mp4`, `.mkv`, `.avi`, `.mov` |
-
-A criação inicial não autoriza recriar a cada abertura as predefinidas que o usuário excluiu. Identificação técnica, preparação das predefinidas e editabilidade da sentinela continuam em [P-07](decisoes-e-pendencias.md#p-07). Nomes duplicados impedem identificar a sentinela apenas comparando seu texto; coluna especial, enum e UUID fixo não foram aprovados como solução.
-
-<a id="tag-03"></a>
-
-### TAG-03 — Tags vazias e contagem de disponíveis
+## TAG-02 — Tags predefinidas
 
 **Estado: confirmada.**
 
-Tags podem existir vazias. Deve haver funcionalidade para encontrá-las e permitir sua exclusão, conforme [UC-13](casos-de-uso.md#uc-13).
+Os nomes aprovados são:
+
+```text
+Imagens
+PDF
+Audios
+Videos
+Etiqueta Ausente
+```
+
+As quatro primeiras podem ser apagadas mediante confirmação reforçada. `Etiqueta Ausente` não pode ser apagada pelo usuário.
+
+Exemplos de extensões iniciais foram discutidos:
+
+```text
+Imagens → .jpg, .jpeg, .png, .gif, .webp
+PDF     → .pdf
+Audios  → .mp3, .wav, .flac, .aac
+Videos  → .mp4, .mkv, .avi, .mov
+```
+
+Esses conjuntos foram exemplos; não há um catálogo completo fechado para todas as Tags. Não há aprovação para ampliar essa lista por inferência.
+
+A criação inicial das Tags predefinidas não é autorização para recriar a cada abertura aquelas que o usuário excluiu. A política técnica de identificação e preparação das predefinidas permanece parcialmente aberta.
+
+<a id="tag-03"></a>
+
+## TAG-03 — Tags vazias e contagem de disponíveis
+
+**Estado: confirmada.**
+
+Tags podem existir vazias. Deve haver uma funcionalidade para encontrá-las e permitir sua exclusão.
 
 A quantidade de arquivos associados com `available = true` será consultada no banco quando necessária. A Tag não terá contador persistido de disponíveis.
 
-**Distinção derivada:** Tag vazia tem zero associações. Uma Tag com associações somente a arquivos indisponíveis tem zero disponíveis, mas não está vazia. A busca de Tags vazias considera associações, não apenas disponibilidade.
+**Distinção derivada:** uma Tag com associações apenas a arquivos indisponíveis não é uma Tag vazia; ela tem zero arquivos disponíveis. A procura por Tags vazias deve considerar associações, não somente a contagem dos disponíveis.
 
-A proteção de `Etiqueta Ausente` vale mesmo vazia e também na funcionalidade de localizar/excluir Tags vazias.
+A proteção de `Etiqueta Ausente` continua valendo quando ela está vazia e também na funcionalidade de localizar/excluir Tags vazias.
 
 <a id="ext-01"></a>
 
-### EXT-01 — Extensões específicas, múltiplas e normalizadas
+## EXT-01 — Extensões específicas, múltiplas e normalizadas
 
-**Estado: confirmada na semântica.**
+**Estado: confirmada.**
 
-Uma Tag aceita zero, uma ou várias extensões, incluindo específicas como `.cdr`, sem enumeração fechada de categorias. Ausência de extensões configuradas significa **ausência de restrição**: qualquer extensão é aceita.
+Uma Tag aceita zero, uma ou várias extensões. Pode aceitar extensões específicas, como `.cdr`, sem depender de uma enumeração fechada de categorias.
 
-Coleção vazia foi proposta como representação Java; `null` também apareceu originalmente. A API de nulabilidade não está inteiramente fechada. A normalização confirmada é para minúsculas e com ponto inicial:
+Ausência de extensões configuradas significa ausência de restrição: a Tag aceita qualquer extensão. Coleção vazia foi proposta como representação Java; `null` também apareceu originalmente. A regra semântica está confirmada, a API de nulabilidade não está completamente fechada.
+
+Normalize extensões para minúsculas e com ponto inicial:
 
 ```text
 PDF   → .pdf
@@ -74,17 +84,19 @@ jpeg  → .jpeg
 CDR   → .cdr
 ```
 
-A mesma extensão não pode ser registrada duas vezes para a mesma Tag; Tags diferentes podem aceitar a mesma extensão ([SQL-02](banco-de-dados.md#sql-02)).
+A mesma extensão não pode ser registrada duas vezes para a mesma Tag. Tags diferentes podem aceitar a mesma extensão.
 
-`FileType` foi um nome inicial. O conceito final é extensão real, não categoria `IMAGE`, `AUDIO` ou `VIDEO`. Não existe decisão inequívoca exigindo uma classe ou enum `FileType`. Arquivos sem extensão, extensões compostas e nomes especiais permanecem em [P-08](decisoes-e-pendencias.md#p-08).
+`FileType` foi usado no início como nome do conceito. O significado final é extensão real, não categoria `IMAGE`, `AUDIO` ou `VIDEO`. Não existe decisão inequívoca exigindo uma classe ou enum `FileType` no código final.
 
 <a id="ext-02"></a>
 
-### EXT-02 — Incompatibilidade ao associar
+## EXT-02 — Incompatibilidade ao associar
 
 **Estado: confirmada.**
 
-**Gatilho e condição:** tentativa de associar um arquivo a uma Tag restrita que não aceita sua extensão. A interface informa a extensão e a Tag afetada e oferece:
+Condição: o usuário tenta associar um arquivo a uma Tag restrita que não aceita sua extensão.
+
+A interface informa a extensão e a Tag afetada e oferece:
 
 ```text
 Criar nova etiqueta
@@ -92,17 +104,30 @@ Adicionar a extensão à etiqueta atual
 Cancelar
 ```
 
-Exemplo: `foto.png` é arrastado sobre `PDF`, que aceita apenas `.pdf`. O usuário pode criar outra Tag, permitir `.png` em `PDF` ou cancelar. A associação incompatível não acontece silenciosamente. Cancelar não autoriza a nova associação nem ampliar a restrição.
+A associação incompatível não ocorre silenciosamente. Cancelar não autoriza a nova associação nem a ampliação da restrição.
 
-O aviso é amigável; incompatibilidade não é falha irrecuperável do aplicativo. O filtro do seletor ajuda a escolher arquivos, mas a regra também vale para Drag and Drop e não pode depender exclusivamente da aparência do seletor. Detalhes de tratamento em lote não estão fechados ([P-12](decisoes-e-pendencias.md#p-12)).
+Exemplo:
+
+```text
+foto.png → tentativa de associar à Tag PDF
+Tag PDF aceita apenas .pdf
+
+O usuário pode criar outra Tag, permitir .png em PDF ou cancelar.
+```
+
+O aviso é amigável. A incompatibilidade não é tratada como falha irrecuperável do aplicativo.
+
+O filtro do seletor de arquivos ajuda na seleção, mas a regra também vale para Drag and Drop e não pode depender exclusivamente da aparência do seletor.
 
 <a id="ext-03"></a>
 
-### EXT-03 — Edição de extensões já utilizadas
+## EXT-03 — Edição de extensões já utilizadas
 
-**Estado: confirmada, com consequências derivadas indicadas abaixo.**
+**Estado: confirmada.**
 
-Quando editar extensões tornar arquivos associados incompatíveis, a UI lista os arquivos afetados e pede confirmação antes de retirar a extensão e as associações incompatíveis.
+Quando a edição das extensões tornar arquivos associados incompatíveis, a UI lista os arquivos afetados e pede confirmação antes de retirar a extensão e as associações incompatíveis.
+
+Exemplo:
 
 ```text
 Tag Faculdade aceita .pdf e .docx.
@@ -110,41 +135,46 @@ Arquivos: prova.pdf, trabalho.docx.
 Usuário altera a restrição para aceitar somente .docx.
 ```
 
-Se confirmar, `prova.pdf` perde apenas a associação com `Faculdade`; outras Tags permanecem. Se perder a última Tag normal, aplica-se [CIC-01](#cic-01). O arquivo físico não é apagado. Sem confirmação, as associações incompatíveis não são retiradas silenciosamente.
+Se confirmar, `prova.pdf` perde apenas sua associação com `Faculdade`. Outras Tags permanecem. Se perder a última Tag normal, aplica-se [CIC-01](requisitos-e-regras.md#cic-01). O arquivo físico não é apagado por essa edição.
+
+Se não confirmar, as associações incompatíveis não são retiradas silenciosamente.
 
 **Consequências derivadas:**
 
 - A compatibilidade é avaliada contra o conjunto final de extensões.
-- Remover a última extensão configurada deixa a Tag sem restrição; não rejeita todos os arquivos.
-- Passar de ausência de restrição para uma lista específica também pode produzir incompatibilidades. O estado final obedece à mesma regra, embora não haja um diálogo separado homologado para essa transição.
+- Remover a última extensão configurada deixa a Tag sem restrição; não significa rejeitar todos os arquivos.
+- Passar de ausência de restrição para uma lista específica pode tornar arquivos incompatíveis. O estado final precisa obedecer à mesma regra, embora não tenha sido desenhado um diálogo separado para essa transição.
 
-Tratamento por arquivo em lote e botões adicionais não foram aprovados ([P-12](decisoes-e-pendencias.md#p-12)).
+Não invente tratamento por arquivo em lote ou botões adicionais não aprovados.
 
 <a id="tag-04"></a>
 
-### TAG-04 — Sugestão de Tag predefinida
+## TAG-04 — Sugestão de Tag predefinida
 
 **Estado: parcialmente confirmada; [P-03](decisoes-e-pendencias.md#p-03) permanece aberta.**
 
-Quando um `LocalFile` é criado, deve ser apresentada a possibilidade de adicionar uma Tag predefinida compatível com a extensão. Por exemplo, ao registrar `prova.pdf` em `Faculdade`, o programa pode sugerir a associação adicional com `PDF`.
+Quando um `LocalFile` é criado, deve ser apresentada a possibilidade de adicionar uma Tag predefinida compatível com a extensão.
 
-A interface possui uma opção equivalente a **“Não perguntar novamente nesta sessão”**. A supressão termina na próxima inicialização; não é uma preferência permanente persistida.
+```text
+prova.pdf é registrado em Faculdade.
+O programa pode sugerir a associação adicional com PDF.
+```
 
-**Pendente:** silenciar apenas impede futuras sugestões sem associar Tags automaticamente, ou repete a resposta dada para os próximos arquivos? [P-03](decisoes-e-pendencias.md#p-03) não foi resolvida pela exportação da especificação. Também não há critério fechado para escolher entre várias predefinidas compatíveis.
+A interface possui uma opção equivalente a **“Não perguntar novamente nesta sessão”**. A supressão termina na próxima inicialização do aplicativo; não é uma preferência permanente persistida.
 
-Aplicação automática obrigatória e reclassificação automática a cada mudança de extensão não foram aprovadas.
+Não foi aprovada aplicação obrigatória automática nem reclassificação automática em toda alteração de extensão.
 
-## Ciclo de vida do registro
+**Pendente:** ao silenciar, o programa deixa de adicionar sugestões ou repete a resposta dada para os próximos arquivos? A resolução depende de [P-03](decisoes-e-pendencias.md#p-03); também não há critério definido para várias predefinidas compatíveis.
 
 <a id="cic-01"></a>
 
-### CIC-01 — Primeira classificação e reorganização durante a sessão
+## CIC-01 — Primeira classificação e reorganização durante a sessão
 
-**Estado: confirmada no fluxo de reorganização.**
+**Estado: confirmada.**
 
-Exibir um arquivo em `Arquivos Local` não cria registro SQL. Associar a primeira Tag passa a exigir um `LocalFile`; se o caminho já estiver registrado, o registro e o UUID são reutilizados.
+Exibir um arquivo em `Arquivos Local` não cria registro SQL. Ao associar a primeira Tag, o programa passa a precisar de um `LocalFile`; se o caminho já estiver registrado, reutiliza o registro.
 
-Quando o usuário retira a última Tag normal durante a sessão, o `LocalFile` permanece e recebe automaticamente a Tag protegida `Etiqueta Ausente`:
+Quando o usuário remove a última Tag normal durante a sessão, o `LocalFile` não é destruído imediatamente. Recebe automaticamente a Tag protegida `Etiqueta Ausente`.
 
 ```text
 prova.pdf: Faculdade, PDF
@@ -152,72 +182,99 @@ remove Faculdade → PDF
 remove PDF → Etiqueta Ausente
 ```
 
-Assim o arquivo continua acessível em `Arquivos por Tag` para reorganização, sem obrigar o usuário a procurá-lo novamente na pasta física. Ao adicionar uma Tag normal, a associação com a sentinela é retirada automaticamente:
+Isso mantém o arquivo acessível em `Arquivos por Tag` para continuar a reorganização, sem obrigar o usuário a procurá-lo novamente na pasta física.
+
+Quando uma Tag normal é adicionada, `Etiqueta Ausente` é removida automaticamente da associação:
 
 ```text
 Etiqueta Ausente + nova Tag Importante
 → resultado: Importante
 ```
 
-A Tag de sistema permanece cadastrada; somente a associação é temporária. O alcance dessa regra sobre remoções explícitas de registros continua em [P-02](decisoes-e-pendencias.md#p-02), especialmente [DEL-02](#del-02) e [OP-02](#op-02).
+A Tag de sistema permanece cadastrada. O que é temporário é a associação com ela.
 
 <a id="cic-02"></a>
 
-### CIC-02 — Limpeza exclusiva da inicialização
+## CIC-02 — Limpeza exclusiva da inicialização
 
 **Estado: confirmada.**
 
 Na abertura do programa, remover do banco:
 
 1. Os `LocalFile` cuja única Tag seja `Etiqueta Ausente`.
-2. Defensivamente, os `LocalFile` sem associação em `LOCAL_FILE_TAG`.
+2. Defensivamente, os `LocalFile` sem qualquer associação em `LOCAL_FILE_TAG`.
 
-Remover também suas associações, conforme o efeito definido. **Os arquivos físicos permanecem.** A Tag `Etiqueta Ausente` permanece cadastrada e fica vazia depois da limpeza.
+Remover também suas associações, conforme o efeito definido. **Não apagar os arquivos físicos.** A Tag `Etiqueta Ausente` permanece e fica vazia depois da limpeza.
 
-Indisponibilidade não é falta de classificação: arquivos indisponíveis não são excluídos apenas por estarem indisponíveis. A identificação técnica da sentinela está em [P-07](decisoes-e-pendencias.md#p-07), pois o nome pode repetir. A preparação e abertura estão em [UC-01](casos-de-uso.md#uc-01).
+Arquivos indisponíveis não são excluídos apenas por estarem indisponíveis. Indisponibilidade e falta de classificação são condições diferentes.
+
+A identificação técnica de `Etiqueta Ausente` não pode depender ingenuamente do nome, pois nomes repetidos são permitidos. O mecanismo concreto está em [P-07](decisoes-e-pendencias.md#p-07).
 
 <a id="cic-03"></a>
 
-### CIC-03 — Limites da limpeza
+## CIC-03 — Limites da limpeza
 
 **Estado: derivada das decisões de sessão e de Refresh.**
 
-Não executam a limpeza de inicialização: Refresh, troca de aba, aplicação de filtros, navegação de pasta, reconexão com MySQL e notificação do Observer. Reconectar não reinicia a sessão de organização.
+Não executam a limpeza de inicialização:
 
-O adiamento em relação à modalidade [DEL-02](#del-02) continua em [P-02](decisoes-e-pendencias.md#p-02). A remoção imediata originalmente definida e a associação temporária à sentinela não são resultados equivalentes nem podem ser combinados como decisão resolvida.
+```text
+Refresh
+Troca de aba
+Aplicação de filtros
+Navegação de pasta
+Reconexão com MySQL
+Notificação do Observer
+```
 
-## Operações sobre arquivos
+Reconectar não é reiniciar a sessão de organização do usuário.
+
+O alcance do adiamento em relação à remoção explícita de todos os registros da modalidade [DEL-02](requisitos-e-regras.md#del-02) permanece em [P-02](decisoes-e-pendencias.md#p-02). Uma regra geral não resolve essa diferença de alcance.
 
 <a id="op-01"></a>
 
-### OP-01 — Seleção, cadastro e associação inicial
+## OP-01 — Seleção, cadastro e associação inicial
 
 **Estado: confirmada.**
 
-Formas aprovadas: seleção individual de arquivo; Drag and Drop de arquivos sobre a representação de uma Tag; seleção de arquivos dentro de uma pasta durante a criação de Tag. `JFileChooser` e `FileNameExtensionFilter` são componentes adotados.
+Formas aprovadas:
 
-Ao criar Tag com restrição, o usuário pode abrir uma pasta e selecionar somente os arquivos desejados compatíveis. Não é obrigado a associar todos os encontrados:
+- Seleção individual de arquivo.
+- Drag and Drop de arquivos sobre a representação de uma Tag.
+- Seleção de arquivos dentro de uma pasta durante a criação de Tag.
+
+`JFileChooser` e `FileNameExtensionFilter` são componentes oficialmente adotados.
+
+Ao criar uma Tag com restrição de extensões, o usuário pode abrir uma pasta e selecionar apenas os arquivos desejados compatíveis. Não é obrigado a associar todos os arquivos encontrados.
+
+Exemplo aprovado:
 
 ```text
 Nova Tag: Faculdade
 Extensão: .pdf
 Pasta: ~/Jogos/Megaman
 
-PDFs visíveis: Megaman-Manual.pdf, prova.pdf
-Seleção do usuário: prova.pdf
+Arquivos PDF visíveis:
+Megaman-Manual.pdf
+prova.pdf
+
+Seleção do usuário:
+prova.pdf
 ```
 
-Para cada arquivo confirmado, verificar se existe `LocalFile` para o caminho. Se existir, reutilizar UUID e criar a associação necessária. Caso contrário, criar `LocalFile` pela Factory e persistir a associação ([ARQ-02](arquitetura-e-padroes.md#arq-02)).
+Para cada arquivo confirmado, verificar se já existe `LocalFile` para o caminho. Se existir, reutilizar o UUID e criar a associação necessária. Caso contrário, criar `LocalFile` pela Factory e persistir a associação.
 
-A mera navegação não cadastra todos os arquivos. Não há importação automática de subpastas nem classificação de diretórios. Seleção múltipla foi aceita nesse fluxo inicial; especificação geral de seleção múltipla para todas as operações permanece em [P-12](decisoes-e-pendencias.md#p-12). Correspondência entre caminhos equivalentes depende de [P-08](decisoes-e-pendencias.md#p-08).
+Não importar automaticamente subpastas, não tratar diretórios como arquivos etiquetáveis e não cadastrar todos os arquivos pela mera navegação.
+
+Seleção múltipla foi aceita nesse fluxo de associação inicial. Não existe especificação completa de seleção múltipla para toda operação de arquivo. Novas formas de seleção em lote não devem ser inventadas.
 
 <a id="op-02"></a>
 
-### OP-02 — Utilização e recuperação de referência indisponível
+## OP-02 — Utilização e recuperação de referência indisponível
 
 **Estado: confirmada no fluxo principal.**
 
-Antes de utilizar um arquivo registrado em uma operação, verificar sua disponibilidade. Se não encontrado no caminho registrado, oferecer:
+Antes de utilizar um arquivo registrado em uma operação, verificar sua disponibilidade. Se não for encontrado no caminho registrado, oferecer:
 
 ```text
 Localizar
@@ -225,19 +282,25 @@ Remover do Tag-File
 Cancelar
 ```
 
-Ao localizar novamente, o usuário indica o caminho correspondente. O mesmo registro passa a apontar para esse endereço, preservando UUID e associações. Não foi definido o resultado se esse caminho já pertencer a outro `LocalFile`; unicidade não autoriza mesclar registros automaticamente ([P-08](decisoes-e-pendencias.md#p-08)).
+Ao localizar novamente, o usuário indica o caminho correspondente; o mesmo registro passa a apontar para esse endereço, preservando UUID e associações.
 
-Remover do Tag-File não equivale a apagar o arquivo físico. O alcance imediato da remoção precisa ser resolvido em [P-02](decisoes-e-pendencias.md#p-02).
+Não foi definido o resultado quando o caminho escolhido já pertence a outro `LocalFile`. A unicidade revela o conflito, mas não autoriza mesclar registros automaticamente.
 
-Abrir em aplicação associada foi usado como fluxo de utilização. A API Java concreta para isso não está fechada e nenhuma integração adicional foi aprovada.
+Remover do Tag-File não equivale a apagar o arquivo físico. Seu alcance imediato deve permanecer coerente com [P-02](decisoes-e-pendencias.md#p-02).
+
+Abrir o arquivo em uma aplicação associada foi usado como fluxo de utilização. A API Java concreta para fazê-lo não foi fechada. Não invente uma ferramenta ou integração adicional.
 
 <a id="op-03"></a>
 
-### OP-03 — Mover, recortar e colar
+## OP-03 — Mover, recortar e colar
 
 **Estado: confirmada.**
 
-Mover arquivo registrado preserva `LocalFile`, UUID e Tags; altera sua localização depois da operação física. Recortar não move imediatamente: registra intenção pendente no `ClipboardService`. Colar em uma pasta executa a movimentação correspondente.
+Mover um arquivo registrado preserva `LocalFile`, UUID e Tags; altera sua localização depois da operação física.
+
+Recortar não move imediatamente. Registra uma intenção pendente no `ClipboardService`. Colar em uma pasta executa a movimentação correspondente.
+
+Fluxo confirmado pelo solicitante:
 
 ```text
 Arquivos por Tag
@@ -250,31 +313,35 @@ Arquivos Local
 → Colar
 ```
 
-Após sucesso, o arquivo físico está no destino, o registro tem o mesmo UUID e Tags, e a visão local mostra essas Tags junto do arquivo. Um arquivo sem `LocalFile` também pode ser manipulado na visão local, sem criar registro SQL para permitir a operação.
+Resultado: arquivo físico no destino, mesmo UUID e Tags no registro; a visão local mostra as Tags junto do arquivo.
 
-Conflitos seguem [OP-06](#op-06); falhas seguem [ERR-01](#err-01). Atualização de disco e banco não é atômica. Clipboard após colagem e lotes permanecem em [P-12](decisoes-e-pendencias.md#p-12).
+Um arquivo sem `LocalFile` também pode ser manipulado na visão local, sem criar registro SQL apenas para permitir a operação.
+
+Conflitos seguem [OP-06](requisitos-e-regras.md#op-06); falhas, [ERR-01](requisitos-e-regras.md#err-01). Não afirme que a atualização do disco e do banco é atômica.
 
 <a id="op-04"></a>
 
-### OP-04 — Copiar
+## OP-04 — Copiar
 
-**Estado: função confirmada; identidade e cópia sem Tags em [P-01](decisoes-e-pendencias.md#p-01).**
+**Estado: função confirmada; detalhes de identidade e cópia sem Tags em [P-01](decisoes-e-pendencias.md#p-01).**
 
-Copiar produz outro arquivo físico e mantém a origem. A UI pergunta se a cópia receberá as Tags do original. Nem “sempre copiar Tags” nem “nunca copiar Tags” foram aprovados.
+Copiar produz outro arquivo físico, mantendo a origem. A UI deve perguntar se a cópia receberá as Tags do original. Não foram aprovados “sempre copiar Tags” nem “nunca copiar Tags”.
 
-Se dois arquivos em caminhos distintos estiverem simultaneamente registrados, o modelo deve distingui-los. Isso não resolve a controvérsia de UUID na substituição.
+Quando dois arquivos em caminhos distintos estiverem simultaneamente registrados, o modelo precisa distinguir esses registros. Essa necessidade não resolve sozinha a controvérsia de UUID surgida na substituição.
 
-**Pendências no ponto de uso:** quando a cópia não herda Tags, ela permanece somente `NativeFile` ou recebe `LocalFile` temporário em `Etiqueta Ausente`? Na substituição, qual UUID permanece em cada caminho e qual registro é excluído? Se já existir um registro da própria cópia, ele assume o caminho final sem gerar outro UUID? Essas perguntas constam de [P-01](decisoes-e-pendencias.md#p-01).
+Não se sabe inequivocamente se uma cópia sem Tags deve permanecer apenas `NativeFile` ou receber um `LocalFile` temporário em `Etiqueta Ausente`. A primeira opção foi sugerida em uma consolidação anterior, mas não foi explicitamente aprovada. Preserve [P-01](decisoes-e-pendencias.md#p-01).
 
-Copiar não move a origem. A documentação não atribui um único caminho a dois registros nem escolhe uma identidade sobrevivente. A primeira alternativa de cópia sem Tags foi sugerida, mas não explicitamente aprovada. Ver [UC-08](casos-de-uso.md#uc-08).
+Não transforme copiar em mover a origem, não atribua silenciosamente um único caminho a dois arquivos registrados e não decida a identidade sobrevivente da substituição sem a resolução correspondente.
 
 <a id="op-05"></a>
 
-### OP-05 — Renomear e mudar extensão
+## OP-05 — Renomear e mudar extensão
 
 **Estado: confirmada.**
 
-Renomear altera nome e localização representada; a operação normal de arquivo cadastrado preserva identidade. Se a extensão mudar e alguma Tag ficar incompatível, oferecer antes de concluir:
+Renomear altera nome e localização representada; para um arquivo cadastrado, a operação normal preserva sua identidade.
+
+Quando a extensão mudar e alguma Tag se tornar incompatível, oferecer antes de concluir:
 
 ```text
 Remover as Tags incompatíveis
@@ -282,57 +349,61 @@ Adicionar a nova extensão às Tags incompatíveis
 Cancelar
 ```
 
-Tags compatíveis permanecem. Se retirar incompatíveis deixar o arquivo sem Tag normal, aplica-se [CIC-01](#cic-01). Associações não são retiradas silenciosamente.
+As Tags compatíveis permanecem. Se a retirada das incompatíveis deixar o arquivo sem Tag normal, [CIC-01](requisitos-e-regras.md#cic-01) se aplica. Não retire associações silenciosamente.
 
-Renomeação não converte o conteúdo para outro formato. Nomes e extensões especiais estão em [P-08](decisoes-e-pendencias.md#p-08), e o comportamento geral de lotes em [P-12](decisoes-e-pendencias.md#p-12).
+O recurso é renomeação, não conversão do conteúdo para outro formato. Não documente conversão de arquivo como funcionalidade implícita.
 
 <a id="op-06"></a>
 
-### OP-06 — Conflitos de nome ou caminho
+## OP-06 — Conflitos de nome ou caminho
 
 **Estado: parcialmente confirmada.**
 
 Oferecer, conforme aplicável:
 
-| Alternativa | Efeito e limite |
-|---|---|
-| Substituir | O arquivo copiado sobrescreve fisicamente o existente no destino. UUID e associações em cópia permanecem em [P-01](decisoes-e-pendencias.md#p-01). |
-| Manter os dois | Preservar os dois arquivos em caminhos distintos. `prova (1).pdf` foi exemplo, não algoritmo homologado. |
-| Cancelar | Não autoriza a operação conflitante ainda não executada. |
+```text
+Substituir
+Manter os dois
+Cancelar
+```
 
-Não foi fechada uma matriz de disponibilidade dessas opções para cada operação, especialmente renomeação. Também não foi definido conflito somente no SQL, sem arquivo físico existente. Política de nomes, equivalência de caminhos, links e colisão ao relocalizar permanecem em [P-08](decisoes-e-pendencias.md#p-08).
+- **Substituir:** o arquivo copiado sobrescreve fisicamente o existente no destino. O resultado exato de UUID e associações em caso de cópia está em [P-01](decisoes-e-pendencias.md#p-01).
+- **Manter os dois:** preservar os dois arquivos com caminhos distintos. `prova (1).pdf` foi exemplo, não algoritmo aprovado.
+- **Cancelar:** não autoriza a operação conflitante ainda não executada.
+
+Não foi fechada uma matriz de disponibilidade dessas opções para cada operação, especialmente renomeação. O tratamento de colisão só no SQL, sem arquivo físico existente, também não foi definido.
 
 <a id="op-07"></a>
 
-### OP-07 — Cancelamento versus falha parcial
+## OP-07 — Cancelamento versus falha parcial
 
 **Estado: consequência derivada com limites confirmados.**
 
-Cancelar antes da confirmação impede aquela ação; não reverte etapas já concluídas. O projeto não possui Undo/Redo, transações explícitas ou restauração garantida. Se uma etapa termina e a seguinte falha, informar o resultado parcial por [ERR-01](#err-01). Não há garantia de “tudo desfeito”.
+Cancelar antes da confirmação impede aquela ação. Isso não é um mecanismo de reversão de etapas já concluídas.
+
+O projeto não possui Undo/Redo, transações explícitas ou restauração garantida. Quando uma etapa termina e a seguinte falha, descrever o resultado parcial conforme [ERR-01](requisitos-e-regras.md#err-01). Não prometer “tudo desfeito”: essa garantia não foi aprovada para o projeto.
 
 <a id="op-08"></a>
 
-### OP-08 — Clipboard interno
-
-**Estado: confirmada na finalidade; representação interna aberta.**
-
-`ClipboardService` é compartilhado pelos exploradores e mantém o estado necessário para COPY/CUT/PASTE dentro do Tag-File. `COPY` e `CUT` foram os estados apresentados; a colagem consulta o estado para escolher a ação.
-
-Integração com o clipboard do sistema operacional está fora da versão atual, com possibilidade de evolução apenas comentada. Não há histórico ou persistência entre execuções definidos.
-
-A representação passou por `List<LocalFile>`, `List<NativeFile>` e proposta de contexto adicional. Nenhuma classe nova de contexto está aprovada. O requisito é suportar arquivos com e sem cadastro e manter a relação correta com `LocalFile` quando existir.
-
-Comportamento após colagem e repetição de CUT permanecem em [P-12](decisoes-e-pendencias.md#p-12); identidade da cópia continua em [P-01](decisoes-e-pendencias.md#p-01).
-
-## Três modalidades de exclusão
-
-<a id="del-01"></a>
-
-### DEL-01 — Deletar apenas a etiqueta
+## OP-08 — Clipboard interno
 
 **Estado: confirmada.**
 
-Excluir a Tag selecionada e somente suas associações. Preservar arquivos físicos e outras Tags dos arquivos.
+`ClipboardService` é compartilhado pelos exploradores e mantém o estado necessário para COPY/CUT/PASTE dentro do Tag-File. A integração com o clipboard do sistema operacional não será implementada; apenas uma explicação de possível evolução deve existir em comentários.
+
+`COPY` e `CUT` foram os estados apresentados. A colagem consulta o estado para escolher a ação.
+
+A representação interna final não foi fechada: surgiram `List<LocalFile>`, depois `List<NativeFile>` e uma sugestão de contexto adicional. Não crie uma nova classe de contexto como decisão aprovada. O requisito é suportar arquivos com e sem registro, mantendo corretamente a relação com `LocalFile` quando ela existir.
+
+Não foram definidos histórico do clipboard, persistência entre execuções, comportamento após colagem ou repetição de uma colagem de CUT.
+
+<a id="del-01"></a>
+
+## DEL-01 — Deletar apenas a etiqueta
+
+**Estado: confirmada.**
+
+Excluir a Tag selecionada e remover somente suas associações. Preservar os arquivos físicos e as outras Tags dos arquivos.
 
 ```text
 Antes: prova.pdf → Faculdade, PDF, Importante
@@ -340,15 +411,15 @@ Excluir apenas Faculdade
 Depois: prova.pdf → PDF, Importante
 ```
 
-Se era a última Tag normal, [CIC-01](#cic-01) conduz à associação com `Etiqueta Ausente`, mantendo o registro durante a sessão.
+Se a Tag excluída era a última Tag normal, a regra de reorganização atual conduz a `Etiqueta Ausente`, em vez de apagar automaticamente o registro na sessão.
 
 <a id="del-02"></a>
 
-### DEL-02 — Deletar todas as etiquetas dos arquivos que possuem a selecionada
+## DEL-02 — Deletar todas as etiquetas dos arquivos que possuem a selecionada
 
 **Estado: efeito originalmente confirmado; relação com regra posterior em [P-02](decisoes-e-pendencias.md#p-02).**
 
-A decisão explícita original determinou remover os `LocalFile` atingidos e todas as suas linhas na join-table, preservando os arquivos físicos.
+A decisão explícita original determinou remover os `LocalFile` atingidos e todas as suas linhas na join-table, mantendo os arquivos físicos.
 
 ```text
 Seleção: Tag Faculdade
@@ -360,77 +431,92 @@ Todas as associações desse registro → removidas
 Arquivo físico → permanece
 ```
 
-As Tags `PDF` e `Importante` não são apagadas globalmente, nem se retiram etiquetas de arquivos fora do conjunto atingido.
+Não apagar globalmente as Tags `PDF` e `Importante`, nem retirar etiquetas de arquivos fora do conjunto atingido.
 
-**Duas decisões abertas em P-02:** essa remoção continua imediata depois da introdução de `Etiqueta Ausente`, ou a sentinela também se aplica aqui? A Tag selecionada é excluída ou permanece vazia? O texto não combina os dois resultados como se fossem equivalentes.
+[P-02](decisoes-e-pendencias.md#p-02) precisa esclarecer se a remoção continua imediata depois da introdução de `Etiqueta Ausente` e se a Tag selecionada também é excluída ou fica vazia.
 
 <a id="del-03"></a>
 
-### DEL-03 — Deletar permanentemente os arquivos da etiqueta
+## DEL-03 — Deletar permanentemente os arquivos da etiqueta
 
 **Estado: confirmada quanto ao resultado final.**
 
-Excluir permanentemente os arquivos físicos associados, seus registros `LocalFile`, todas as associações desses registros e a Tag selecionada. Outras Tags continuam existindo, mas deixam de conter os registros excluídos; não são apagadas globalmente por terem classificado o mesmo arquivo.
+Excluir permanentemente os arquivos físicos associados, seus registros `LocalFile`, todas as associações desses registros e a Tag selecionada.
 
-Ordem exata das etapas, política por lote e recuperação entre disco e banco não foram especificadas ([P-12](decisoes-e-pendencias.md#p-12)). Não há garantia de restauração, envio à lixeira ou reversibilidade.
+Outras Tags continuam existindo, mas deixam de conter os registros excluídos. Não se apagam essas Tags globalmente apenas por terem classificado o mesmo arquivo.
+
+Não foi especificada a ordem exata das etapas, política por lote ou recuperação de falha entre disco e banco. Não garantir restauração, envio para lixeira ou reversibilidade.
 
 <a id="del-04"></a>
 
-### DEL-04 — Confirmações e clareza
+## DEL-04 — Confirmações e clareza
 
 **Estado: confirmada.**
 
-A UI deve distinguir retirada de associação, remoção de registro e exclusão física. Antes de excluir registros ou arquivos que tenham outras Tags, pedir confirmação adicional listando essas etiquetas afetadas.
+A UI deve diferenciar as três consequências. Antes de excluir registros ou arquivos que possuem outras Tags, deve haver confirmação adicional listando quais são as outras etiquetas afetadas.
 
-Predefinidas comuns exigem confirmação reforçada e `Etiqueta Ausente` é protegida. Não se reduzem as três modalidades a opções indistinguíveis chamadas apenas “Excluir”. A redação visual não precisa copiar literalmente os exemplos, mas deve explicar as consequências separadamente. Ver a tabela de efeitos em [UC-12](casos-de-uso.md#uc-12).
+As Tags predefinidas comuns têm confirmação reforçada. `Etiqueta Ausente` é protegida.
 
-## Atualização, disponibilidade e falhas
+Não reduza as três modalidades a botões indistinguíveis chamados apenas “Excluir”. Os textos de exemplos não precisam ser copiados literalmente, mas precisam explicar separadamente retirada de associação, remoção do registro e exclusão física.
 
 <a id="syn-01"></a>
 
-### SYN-01 — Quando atualizar e com qual alcance
+## SYN-01 — Quando atualizar e com qual alcance
 
 **Estado: confirmada.**
 
 | Gatilho | Alcance |
 |---|---|
-| Inicialização | Todos os `LocalFile`, além da limpeza separada e exclusiva da inicialização. |
+| Inicialização | Todos os `LocalFile`, além da limpeza de inicialização separada. |
 | Utilização de arquivo em operação | Verificar o arquivo utilizado. |
 | Troca de aba | Refresh completo de todos os `LocalFile`. |
 | Antes de aplicar filtros | Refresh completo de todos os `LocalFile`. |
 | Botão Refresh | Refresh completo de todos os `LocalFile`. |
 
-Não há sincronização completa automática a cada pasta navegada nem monitoramento contínuo. Listar uma pasta e consultar correspondências em `Map` são leituras normais da navegação, distintas de Refresh global ([EXP-03](interface-e-fluxos.md#exp-03)).
+Não realizar sincronização completa automática a cada pasta navegada nem monitoramento contínuo.
+
+Listar uma pasta para mostrá-la e consultar correspondências no Map não se confunde com Refresh global. Não impedir navegação normal sob a interpretação equivocada de que nenhuma leitura pode ocorrer ao entrar em pasta.
 
 <a id="syn-02"></a>
 
-### SYN-02 — Metadados sincronizados
+## SYN-02 — Metadados sincronizados
 
 **Estado: consolidado no fluxo discutido.**
 
-Sincronizar disponibilidade, tamanho, criação, modificação e último acesso físico. `LocalFileManager` coordena a leitura nativa e a persistência ([ARQ-07](arquitetura-e-padroes.md#arq-07)).
+Sincronizar disponibilidade, tamanho, criação, modificação e último acesso do arquivo. `LocalFileManager` coordena a leitura nativa e a persistência.
 
-Não foi decidido executar `UPDATE` quando nenhum campo muda, nem o valor a gravar se uma data não puder ser lida. Ausência de metadados e conversão temporal permanecem em [P-10](decisoes-e-pendencias.md#p-10), sem datas substitutas ou zeros inventados. Representações de atributos estão em [DOM-03](modelo-de-dominio.md#dom-03); o DDL físico segue [P-06](decisoes-e-pendencias.md#p-06).
+Não foi decidido executar `UPDATE` quando nenhum campo mudou, nem o que gravar quando determinada data não puder ser lida. Preservar [P-10](decisoes-e-pendencias.md#p-10) e não inventar datas substitutas ou valores zero.
 
 <a id="syn-03"></a>
 
-### SYN-03 — Refresh único, sem limpeza nem duplicação
+## SYN-03 — Refresh único, sem limpeza nem duplicação
 
 **Estado: confirmada no botão; demais restrições derivadas.**
 
-Existe um único botão Refresh compartilhado pelos exploradores. Uma solicitação global não deve ser duplicada porque duas Screens recebem notificação. O Observer atualiza a apresentação; a notificação não deve criar um ciclo de novo Refresh global.
+Existe um único botão Refresh compartilhado pelos exploradores. Uma solicitação de atualização global não deve ser duplicada porque duas Screens recebem uma notificação.
 
-`refreshAll()` não executa limpeza por ausência de Tags. O [fluxo visual](interface-e-fluxos.md#fluxo-refresh) e [UC-14](casos-de-uso.md#uc-14) apresentam essa separação. A composição concreta das Screens está em [P-04](decisoes-e-pendencias.md#p-04) e a prevenção interna de reentrância em [P-12](decisoes-e-pendencias.md#p-12).
+O Observer atualiza a apresentação; suas notificações não devem produzir um ciclo de novo Refresh global.
+
+`refreshAll()` não executa a limpeza por ausência de Tags.
 
 <a id="err-01"></a>
 
-### ERR-01 — Falhas e resultados parciais
+## ERR-01 — Falhas e resultados parciais
 
 **Estado: confirmada.**
 
-Apresentar pop-up com mensagem compreensível, o que foi concluído, o que falhou e área expansível de detalhes técnicos. Quando existirem, detalhes podem incluir mensagem da exceção, SQLState, código MySQL e código de saída de processo. Erro de compilação é distinto de erro durante execução; não há código de saída de processo a inventar quando nenhum processo externo participou.
+Exibir pop-up com:
 
-**Exemplo didático, não executado:**
+```text
+Mensagem compreensível
+O que foi concluído
+O que falhou
+Área expansível com detalhes técnicos
+```
+
+Detalhes podem incluir mensagem da exceção, SQLState, código MySQL e código de saída de processo quando existirem. Diferencie erro de compilação de erro durante execução. Não invente um código de saída onde não há processo externo.
+
+Exemplo:
 
 ```text
 Concluído: o arquivo foi movido para a pasta de destino.
@@ -438,12 +524,12 @@ Falhou: o novo caminho não foi salvo no MySQL.
 Detalhes técnicos: mensagem e identificadores disponíveis.
 ```
 
-Não há recuperação automática, repetição garantida, rollback de arquivo ou restauração. A política de continuar/parar lotes após falha não foi definida ([P-12](decisoes-e-pendencias.md#p-12)). [SQL-05](banco-de-dados.md#sql-05) registra a ausência de transações explícitas; [AMB-05](instalacao-e-execucao.md#amb-05) explica que reconexão não desfaz nem garante repetição de operações.
+Não afirmar recuperação automática, repetição garantida, rollback de arquivo ou restauração. A política de continuar/parar um lote após falha não foi definida.
 
-Diagnósticos não devem expor credenciais reais. A credencial didática pública está definida separadamente em [AMB-03](instalacao-e-execucao.md#amb-03). Falhas na preparação do ambiente e recuperação de schema continuam em [P-11](decisoes-e-pendencias.md#p-11).
+Não exponha credenciais reais nos exemplos de diagnóstico. A credencial didática do projeto está definida separadamente; isso não autoriza copiar segredos do repositório para os documentos.
 
-## Limites da especificação
+## Leitura conjunta das operações
 
-As restrições completas estão na [visão geral](visao-geral.md). Esta versão não inclui Maven, pool de conexões, transações explícitas, Undo/Redo, clipboard do sistema, monitoramento contínuo, classe `ExplorerEvent`, `schema_history`, Factory para objetos Native, contador persistido de disponíveis ou operador NOT. Essas escolhas acadêmicas não garantem atomicidade, reconexão perfeita ou recuperação de falhas.
+As Screens encaminharão as interações aos Controllers. [ARQ-03](arquitetura-e-padroes.md#arq-03) distribui a execução direta entre os Managers/Services já aprovados; LocalFileManager coordena o registro e NativeFileService atua no disco. Os DAOs persistem, e o Controller publica a atualização pertinente. O exemplo de associação, a colagem entre visões e o Refresh estão explicados em [orientação de construção](arquitetura-e-padroes.md#orientacao-construcao).
 
-As questões [P-01 a P-13](decisoes-e-pendencias.md) continuam explícitas nos assuntos afetados. Em particular, cópia/substituição, modalidade 2 de exclusão e supressão das sugestões permanecem sem decisão completa.
+As limitações da versão estão em [visão geral](visao-geral.md#restricoes). Copiar/substituir permanece limitado por [P-01](decisoes-e-pendencias.md#p-01); a modalidade 2 e a remoção explícita por [P-02](decisoes-e-pendencias.md#p-02); silenciar sugestões por [P-03](decisoes-e-pendencias.md#p-03). Nenhuma sequência deve transformar essas alternativas em resultados fechados.

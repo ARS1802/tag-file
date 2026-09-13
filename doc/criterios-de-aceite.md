@@ -1,260 +1,281 @@
 # Critérios de aceite
 
-ACE-01 a ACE-24 são cenários derivados da especificação para futura verificação e apresentação acadêmica. Não representam uma rubrica adicional atribuída ao professor. **Todos estão NÃO EXECUTADOS**: não houve execução da aplicação, criação de massa de testes, compilação, consulta ao banco ou teste de implementação nesta missão.
+[Índice](README.md) · [Casos de uso](casos-de-uso.md) · [Rastreabilidade](rastreabilidade.md)
 
-O código encontrado em [`src/Main.java`](../src/Main.java), método `Main.main`, é um template de saudação e laço de 1 a 5. As funcionalidades abaixo não foram encontradas no conjunto de arquivos do projeto. As condições descritas são preparações hipotéticas para uma verificação futura, não dados que se afirmem existentes. As regras vinculadas são a fonte principal; este documento organiza o que observar sem definir contratos pendentes.
+**Cenários previstos para validação futura; não executados nesta missão.** [ACE-01](criterios-de-aceite.md#ace-01) a [ACE-24](criterios-de-aceite.md#ace-24) derivam das regras e orientarão a equipe depois da implementação. Não são uma rubrica adicional, massa de testes criada ou resultados de funcionamento. Cada condição abaixo é hipotética para essa verificação futura.
 
-## Arquivos, Tags e extensões
+O resultado esperado é definido pelas regras vinculadas. Quando uma decisão está aberta, a parte confirmada continua documentada e o resultado completo fica explicitamente limitado. Não se classifica a fase anterior à implementação como falha dos cenários.
 
 <a id="ace-01"></a>
 
-### ACE-01 — Navegar sem cadastrar todos os arquivos
+## ACE-01
 
 - **Origem:** [DOM-01](modelo-de-dominio.md#dom-01), [EXP-01](interface-e-fluxos.md#exp-01).
-- **Condição e ação futuras:** abrir em `Arquivos Local` uma pasta que contenha arquivos sem registro.
-- **Resultado esperado:** os arquivos aparecem como representações nativas, sem criar um `LocalFile` ou linha SQL para cada arquivo simplesmente exibido. Não são exigidas Tags artificiais.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Pasta com arquivos sem registro.
+- **Passos futuros:** Abrir ou navegar para a pasta em Arquivos Local.
+- **Resultado esperado:** Abrir uma pasta mostra arquivos sem criar LocalFile para cada um.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-02"></a>
 
-### ACE-02 — Reutilizar identidade ao associar
+## ACE-02
 
 - **Origem:** [DOM-02](modelo-de-dominio.md#dom-02), [OP-01](requisitos-e-regras.md#op-01).
-- **Condição e ação futuras:** associar uma Tag a um arquivo cujo caminho já está cadastrado.
-- **Resultado esperado:** reutilizar `LocalFile` e UUID, criando somente a associação necessária. Não criar outro registro para o mesmo caminho.
-- **Limite:** equivalência e normalização de caminhos dependem de [P-08](decisoes-e-pendencias.md#p-08); o cenário básico considera o mesmo caminho cadastrado.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Caminho já cadastrado e Tag a associar.
+- **Passos futuros:** Confirmar a associação e comparar a identidade do registro.
+- **Resultado esperado:** Associar Tag a um caminho cadastrado reutiliza o registro e UUID.
+- **Limites e consequências:** O cenário básico considera o mesmo caminho. Equivalência, links e normalização dependem de [P-08](decisoes-e-pendencias.md#p-08).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-03"></a>
 
-### ACE-03 — Distinguir arquivos homônimos
+## ACE-03
 
 - **Origem:** [DOM-02](modelo-de-dominio.md#dom-02).
-- **Condição e ação futuras:** apresentar ou classificar arquivos com o mesmo nome em pastas diferentes.
-- **Resultado esperado:** permitir arquivos distintos; nome repetido não funde registros. Quando ambos estiverem cadastrados, seus registros têm identidade própria.
-- **Limite:** não pressupõe deduplicação por conteúdo nem resolve caminhos equivalentes de [P-08](decisoes-e-pendencias.md#p-08).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Arquivos homônimos em pastas diferentes.
+- **Passos futuros:** Classificá-los ou apresentá-los e distinguir os caminhos e registros.
+- **Resultado esperado:** Arquivos homônimos em pastas diferentes podem aparecer como arquivos distintos.
+- **Limites e consequências:** Não há deduplicação por conteúdo aprovada; [P-08](decisoes-e-pendencias.md#p-08) mantém caminhos equivalentes abertos.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-04"></a>
 
-### ACE-04 — Aceitar várias extensões específicas
+## ACE-04
 
 - **Origem:** [EXT-01](requisitos-e-regras.md#ext-01).
-- **Condição e ação futuras:** configurar uma Tag com mais de uma extensão real, incluindo `.cdr`.
-- **Resultado esperado:** persistir as restrições e permitir associar arquivos compatíveis com qualquer extensão configurada. Não restringir as escolhas a categorias fechadas como IMAGE ou AUDIO.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Tag com mais de uma extensão específica, incluindo .cdr.
+- **Passos futuros:** Configurar as restrições e selecionar arquivos compatíveis.
+- **Resultado esperado:** Uma Tag pode aceitar múltiplas extensões específicas, incluindo .cdr.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-05"></a>
 
-### ACE-05 — Normalizar e evitar repetição de extensão
+## ACE-05
 
 - **Origem:** [EXT-01](requisitos-e-regras.md#ext-01), [SQL-02](banco-de-dados.md#sql-02).
-- **Condição e ação futuras:** informar `PDF` e `.PDF` nas extensões da mesma Tag.
-- **Resultado esperado:** normalizar ambas para `.pdf`, sem duplicar a extensão nessa Tag. A mesma extensão continua permitida em Tags distintas.
-- **Limite:** o critério não homologa uma constraint física específica ou resolve extensões compostas e nomes especiais de [P-08](decisoes-e-pendencias.md#p-08).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Entradas PDF e .PDF para extensões da mesma Tag.
+- **Passos futuros:** Confirmar a configuração e verificar o conjunto normalizado.
+- **Resultado esperado:** PDF e .PDF são normalizados para .pdf; a extensão não se duplica na mesma Tag.
+- **Limites e consequências:** A unicidade por Tag está definida, mas a constraint física específica segue [P-06](decisoes-e-pendencias.md#p-06). Tags distintas podem usar a mesma extensão.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-06"></a>
 
-### ACE-06 — Aceitar qualquer extensão sem restrição
+## ACE-06
 
 - **Origem:** [EXT-01](requisitos-e-regras.md#ext-01).
-- **Condição e ação futuras:** associar arquivos com extensões diferentes a uma Tag sem extensões configuradas.
-- **Resultado esperado:** aceitar as extensões, pois ausência de restrição não significa rejeitar todos os arquivos.
-- **Limite:** isso não decide a nulabilidade da coleção Java nem o tratamento de nomes sem extensão.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Tag sem extensões configuradas.
+- **Passos futuros:** Associar arquivos com extensões diferentes.
+- **Resultado esperado:** Tag sem restrição aceita extensões diferentes.
+- **Limites e consequências:** Não decide nulabilidade da coleção Java nem casos especiais de arquivos sem extensão ([P-08](decisoes-e-pendencias.md#p-08)).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-07"></a>
 
-### ACE-07 — Tratar associação incompatível
+## ACE-07
 
 - **Origem:** [EXT-02](requisitos-e-regras.md#ext-02).
-- **Condição e ação futuras:** tentar associar um arquivo incompatível com a restrição da Tag, por seleção ou Drop aprovado.
-- **Resultado esperado:** informar a extensão e a Tag e oferecer criar nova etiqueta, adicionar a extensão à etiqueta atual ou cancelar. A associação incompatível não ocorre silenciosamente; cancelar não amplia a restrição nem autoriza a associação.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Arquivo incompatível com uma Tag restrita.
+- **Passos futuros:** Tentar associá-lo por seleção ou Drop e verificar as alternativas.
+- **Resultado esperado:** Associação incompatível oferece criar Tag, adicionar extensão ou cancelar.
+- **Limites e consequências:** Cancelar não amplia a Tag nem autoriza associação incompatível. Lotes permanecem em [P-12](decisoes-e-pendencias.md#p-12).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-08"></a>
 
-### ACE-08 — Confirmar efeitos de editar restrições
+## ACE-08
 
 - **Origem:** [EXT-03](requisitos-e-regras.md#ext-03).
-- **Condição e ação futuras:** editar as extensões de uma Tag de modo que o conjunto final torne arquivos associados incompatíveis.
-- **Resultado esperado:** listar os afetados e aguardar confirmação antes de retirar as associações incompatíveis. Confirmar preserva outras Tags e arquivos físicos; perder a última Tag normal leva a `Etiqueta Ausente`. Não confirmar impede a retirada silenciosa.
-- **Limite:** remover a última extensão configurada elimina a restrição; não torna todos incompatíveis. Apresentação e tratamento geral de lotes continuam em [P-12](decisoes-e-pendencias.md#p-12).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Tag cuja edição de restrições afetaria arquivos associados.
+- **Passos futuros:** Alterar o conjunto final de extensões e observar a confirmação antes das retiradas.
+- **Resultado esperado:** Editar restrições lista os arquivos que perderiam compatibilidade e aguarda confirmação.
+- **Limites e consequências:** Retirar somente associações incompatíveis confirmadas; preservar outras Tags e disco; aplicar [CIC-01](requisitos-e-regras.md#cic-01) quando necessário. Remover a última extensão configurada elimina a restrição. [P-12](decisoes-e-pendencias.md#p-12) mantém apresentação em lote aberta.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-09"></a>
 
-### ACE-09 — Confirmar nome repetido de Tag
+## ACE-09
 
 - **Origem:** [TAG-01](requisitos-e-regras.md#tag-01).
-- **Condição e ação futuras:** tentar criar outra Tag com um nome já existente.
-- **Resultado esperado:** permitir prosseguir após a confirmação correspondente; a nova Tag tem UUID próprio e o nome não é UNIQUE.
-- **Limite:** comparação de maiúsculas/minúsculas, espaços, vazio e outros detalhes de validação estão em [P-09](decisoes-e-pendencias.md#p-09).
-- **Estado de validação:** NÃO EXECUTADO.
-
-## Ciclo de vida e consultas
+- **Condição:** Tag já existente com o nome informado.
+- **Passos futuros:** Tentar criar outra com esse nome e confirmar ou cancelar.
+- **Resultado esperado:** Nome de Tag repetido permite prosseguir somente após a confirmação correspondente.
+- **Limites e consequências:** Nome não é UNIQUE; a nova Tag possui identidade própria. Comparação de caixa/espaços e validação em [P-09](decisoes-e-pendencias.md#p-09).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-10"></a>
 
-### ACE-10 — Manter registro ao perder a última Tag normal
+## ACE-10
 
 - **Origem:** [CIC-01](requisitos-e-regras.md#cic-01).
-- **Condição e ação futuras:** retirar a última Tag normal no fluxo comum de reorganização durante a sessão.
-- **Resultado esperado:** associar automaticamente `Etiqueta Ausente`, preservando o registro e o arquivo físico e permitindo continuar a reorganização.
-- **Limite:** este cenário não define a modalidade 2 de exclusão ou a remoção explícita de uma referência indisponível; o alcance dessas ações está em [P-02](decisoes-e-pendencias.md#p-02).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Registro classificado no fluxo comum de reorganização da sessão.
+- **Passos futuros:** Retirar sua última Tag normal.
+- **Resultado esperado:** Retirar a última Tag normal durante reorganização associa Etiqueta Ausente.
+- **Limites e consequências:** Não resolve [DEL-02](requisitos-e-regras.md#del-02) ou remoção explícita de [OP-02](requisitos-e-regras.md#op-02); o alcance permanece em [P-02](decisoes-e-pendencias.md#p-02).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-11"></a>
 
-### ACE-11 — Retirar a sentinela ao reclassificar
+## ACE-11
 
 - **Origem:** [CIC-01](requisitos-e-regras.md#cic-01).
-- **Condição e ação futuras:** adicionar uma Tag normal a um arquivo associado a `Etiqueta Ausente`.
-- **Resultado esperado:** retirar automaticamente a associação com a Tag de sistema e preservar o mesmo registro com a nova classificação. A Tag de sistema permanece cadastrada.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Registro associado a Etiqueta Ausente.
+- **Passos futuros:** Adicionar uma Tag normal.
+- **Resultado esperado:** Adicionar Tag normal remove a associação temporária com Etiqueta Ausente.
+- **Limites e consequências:** Retirar somente a associação temporária; a Tag de sistema permanece.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-12"></a>
 
-### ACE-12 — Limpar somente na inicialização
+## ACE-12
 
 - **Origem:** [CIC-02](requisitos-e-regras.md#cic-02).
-- **Condição e ação futuras:** iniciar o aplicativo com registros cuja única Tag seja `Etiqueta Ausente` e registros defensivamente sem associações.
-- **Resultado esperado:** remover esses `LocalFile` e suas associações pertinentes, sem apagar arquivos físicos; preservar `Etiqueta Ausente`, que fica vazia. Um registro com Tags normais não é removido apenas por estar indisponível.
-- **Limite:** identificar tecnicamente a Tag protegida sem depender ingenuamente de nome repetível continua em [P-07](decisoes-e-pendencias.md#p-07). A condição é hipotética; não foram inseridos órfãos em banco.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Na abertura, registros somente na sentinela e registros sem associação.
+- **Passos futuros:** Executar futuramente a inicialização do domínio e observar os registros remanescentes.
+- **Resultado esperado:** Na inicialização, registros somente na sentinela e órfãos são removidos sem apagar os arquivos físicos.
+- **Limites e consequências:** Indisponibilidade não é motivo isolado de exclusão. Identificação da sentinela está em [P-07](decisoes-e-pendencias.md#p-07). A condição é hipotética; não foram inseridos órfãos em banco.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-13"></a>
 
-### ACE-13 — Separar Refresh de limpeza
+## ACE-13
 
 - **Origem:** [CIC-03](requisitos-e-regras.md#cic-03), [SYN-03](requisitos-e-regras.md#syn-03).
-- **Condição e ação futuras:** acionar Refresh durante uma sessão que contenha um registro em `Etiqueta Ausente`.
-- **Resultado esperado:** atualizar disponibilidade/metadados sem executar a limpeza de inicialização. A associação temporária e o registro continuam acessíveis na sessão. Troca de aba, filtros, navegação, notificação e reconexão também não autorizam essa limpeza.
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Sessão com registro em Etiqueta Ausente.
+- **Passos futuros:** Acionar o Refresh compartilhado.
+- **Resultado esperado:** Refresh não executa a limpeza de inicialização.
+- **Limites e consequências:** Reconexão, filtros, troca de aba, navegação e Observer também não executam a limpeza da inicialização ([CIC-03](requisitos-e-regras.md#cic-03)).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-14"></a>
 
-### ACE-14 — Proteger `Etiqueta Ausente`, inclusive vazia
+## ACE-14
 
 - **Origem:** [TAG-02](requisitos-e-regras.md#tag-02), [TAG-03](requisitos-e-regras.md#tag-03).
-- **Condição e ação futuras:** tentar apagar a Tag de sistema diretamente ou pela funcionalidade de encontrar/excluir Tags vazias.
-- **Resultado esperado:** impedir sua exclusão pelo usuário. A busca por vazias considera ausência de associações; uma Tag com arquivos associados indisponíveis não se torna vazia por ter zero disponíveis.
-- **Limite:** o mecanismo de identidade da Tag protegida permanece em [P-07](decisoes-e-pendencias.md#p-07).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Tag de sistema, inclusive quando vazia.
+- **Passos futuros:** Tentar sua exclusão direta e pela funcionalidade de localizar Tags vazias.
+- **Resultado esperado:** Etiqueta Ausente não pode ser apagada, nem pela seleção de Tags vazias.
+- **Limites e consequências:** Zero disponíveis não equivale a zero associações. O mecanismo de identidade especial está em [P-07](decisoes-e-pendencias.md#p-07).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-15"></a>
 
-### ACE-15 — Consultar arquivos com AND e OR
+## ACE-15
 
 - **Origem:** [EXP-04](interface-e-fluxos.md#exp-04).
-- **Condição e ação futuras:** selecionar várias Tags e consultar arquivos alternando AND e OR.
-- **Resultado esperado:** AND retorna arquivos com todas as Tags selecionadas; OR retorna arquivos com pelo menos uma. Não há NOT nem duplicação de `LocalFile` por corresponder a várias Tags.
-- **Limite:** encaixe das APIs está em [P-05](decisoes-e-pendencias.md#p-05); consulta sem Tags selecionadas e ordenação estão em [P-13](decisoes-e-pendencias.md#p-13).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Uma ou várias Tags selecionadas.
+- **Passos futuros:** Aplicar AND e OR e comparar os arquivos apresentados.
+- **Resultado esperado:** AND exige todas as Tags selecionadas e OR exige ao menos uma.
+- **Limites e consequências:** Não incluir NOT ou duplicar LocalFile. Retorno/API em [P-05](decisoes-e-pendencias.md#p-05); nenhuma Tag selecionada e ordenação em [P-13](decisoes-e-pendencias.md#p-13).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-16"></a>
 
-### ACE-16 — Enriquecer a visão local com correspondência em lote
+## ACE-16
 
 - **Origem:** [EXP-03](interface-e-fluxos.md#exp-03).
-- **Condição e ação futuras:** listar uma pasta com arquivos cadastrados e não cadastrados, aplicando os critérios físicos pertinentes.
-- **Resultado esperado:** consultar correspondências persistidas em lote, obtendo `Map<Path, LocalFile>`; mostrar as Tags onde existir registro e preservar os `NativeFile` sem registro na listagem, deixando a área de Tags em branco quando não houver associação. Não exigir uma consulta SQL separada por arquivo.
-- **Limite:** equivalência das chaves de caminho permanece em [P-08](decisoes-e-pendencias.md#p-08).
-- **Estado de validação:** NÃO EXECUTADO.
-
-## Operações, atualização e falhas
+- **Condição:** Pasta com arquivos cadastrados e não cadastrados.
+- **Passos futuros:** Listar e aplicar critérios físicos; consultar correspondências em lote.
+- **Resultado esperado:** A correspondência Map acrescenta etiquetas aos NativeFile sem eliminar os não registrados.
+- **Limites e consequências:** Manter todos os NativeFile resultantes; Tags em branco quando não houver associação. Assinatura em lote e equivalência das chaves seguem abertas, com [P-08](decisoes-e-pendencias.md#p-08).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-17"></a>
 
-### ACE-17 — Recortar e colar entre os exploradores
+## ACE-17
 
 - **Origem:** [OP-03](requisitos-e-regras.md#op-03).
-- **Condição e ação futuras:** recortar `prova.pdf` de `Faculdade` em `Arquivos por Tag` e colar em `~/Documentos/Faculdade` por `Arquivos Local`, conforme o exemplo aprovado.
-- **Resultado esperado:** recortar registra intenção no clipboard interno e mantém a origem até colar. Após movimentação bem-sucedida, o arquivo físico está no destino e o registro conserva UUID e Tags com o novo caminho; a visão local mostra as Tags.
-- **Limite:** o critério não garante atomicidade entre disco e banco. Estado do clipboard após colagem e repetição de CUT permanecem em [P-12](decisoes-e-pendencias.md#p-12).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** prova.pdf em Faculdade, selecionado em Arquivos por Tag.
+- **Passos futuros:** Recortar, navegar por Arquivos Local até ~/Documentos/Faculdade e colar.
+- **Resultado esperado:** Recortar em Arquivos por Tag e colar em Arquivos Local preserva UUID e Tags do arquivo movido.
+- **Limites e consequências:** Recortar não move imediatamente. Após sucesso, caminho muda; UUID e Tags permanecem. Não há atomicidade disco/SQL. Clipboard após colagem e repetição de CUT seguem [P-12](decisoes-e-pendencias.md#p-12).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-18"></a>
 
-### ACE-18 — Confirmar renomeação com extensão incompatível
+## ACE-18
 
 - **Origem:** [OP-05](requisitos-e-regras.md#op-05).
-- **Condição e ação futuras:** renomear um arquivo alterando a extensão de forma incompatível com alguma Tag atual.
-- **Resultado esperado:** antes de concluir, oferecer remover as Tags incompatíveis, adicionar a nova extensão a elas ou cancelar. Preservar Tags compatíveis; aplicar `Etiqueta Ausente` se a remoção deixar o arquivo sem Tag normal. A renomeação normal preserva UUID e não converte o conteúdo.
-- **Limite:** conflitos de nome e matriz de alternativas por operação não estão completamente definidos; ver [P-08](decisoes-e-pendencias.md#p-08) e [P-12](decisoes-e-pendencias.md#p-12).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Arquivo cuja nova extensão seria incompatível com Tags atuais.
+- **Passos futuros:** Solicitar renomeação e observar as alternativas antes de concluir.
+- **Resultado esperado:** Renomeação com extensão incompatível apresenta as três alternativas aprovadas.
+- **Limites e consequências:** Preservar Tags compatíveis e identidade na renomeação normal. Não converter conteúdo; conflitos e casos especiais seguem [P-08](decisoes-e-pendencias.md#p-08)/[P-12](decisoes-e-pendencias.md#p-12).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-19"></a>
 
-### ACE-19 — Distinguir as três modalidades de exclusão
+## ACE-19
 
-- **Origem:** [DEL-01](requisitos-e-regras.md#del-01), [DEL-02](requisitos-e-regras.md#del-02), [DEL-03](requisitos-e-regras.md#del-03), [DEL-04](requisitos-e-regras.md#del-04).
-- **Condição e ação futuras:** abrir a exclusão de uma Tag cujos arquivos também possuem outras Tags.
-- **Resultado esperado:** diferenciar excluir somente a etiqueta; retirar todas as etiquetas dos arquivos atingidos; excluir permanentemente esses arquivos. Antes de remover registros/arquivos, listar outras Tags afetadas e pedir confirmação adicional. Predefinidas comuns exigem confirmação reforçada; `Etiqueta Ausente` permanece protegida.
-- **Limite obrigatório:** o resultado completo da modalidade 2 está **pendente em [P-02](decisoes-e-pendencias.md#p-02)**: remoção imediata ou adiamento dos registros e exclusão ou preservação da Tag selecionada. Estão confirmadas a preservação dos arquivos físicos nessa modalidade e a não exclusão global das outras Tags. Não atribuir a ela um resultado SQL definitivo.
-- **Estado de validação:** NÃO EXECUTADO; a distinção visual é definida, mas o aceite completo da modalidade 2 depende da decisão pendente.
+- **Origem:** [DEL-01](requisitos-e-regras.md#del-01) a [DEL-04](requisitos-e-regras.md#del-04).
+- **Condição:** Tag cujos arquivos também possuem outras Tags.
+- **Passos futuros:** Escolher entre as três modalidades e observar informações e confirmações.
+- **Resultado esperado:** A UI distingue as três exclusões e alerta sobre outras Tags afetadas.
+- **Limites e consequências:** [P-02](decisoes-e-pendencias.md#p-02) impede fechar o resultado completo da modalidade 2: remoção imediata ou adiamento e destino da Tag selecionada. Estão definidos preservar o disco e não apagar globalmente outras Tags. Predefinidas comuns exigem reforço; sentinela não pode ser excluída.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-20"></a>
 
-### ACE-20 — Perguntar sobre herdar Tags na cópia
+## ACE-20
 
 - **Origem:** [OP-04](requisitos-e-regras.md#op-04), [P-01](decisoes-e-pendencias.md#p-01).
-- **Condição e ação futuras:** copiar um arquivo e escolher destino, contemplando o diálogo sobre receber as Tags do original.
-- **Resultado esperado confirmado:** manter a origem física e perguntar sobre herdar Tags. Se houver conflito e a opção aplicável for confirmada, Substituir sobrescreve fisicamente o destino; Manter os dois preserva caminhos distintos; Cancelar não autoriza a ação conflitante ainda não realizada.
-- **Limite obrigatório:** **P-01 continua aberta** para UUID/associações sobreviventes na substituição e para decidir se cópia sem Tags é apenas `NativeFile` ou recebe `LocalFile` temporário em `Etiqueta Ausente`. Não prever a origem sendo movida ou seu registro transferido como solução da cópia; não prometer reversão de etapas já concluídas.
-- **Estado de validação:** NÃO EXECUTADO; o resultado SQL completo não pode ser aprovado enquanto P-01 não for resolvida.
+- **Condição:** Arquivo a copiar, com destino escolhido e eventual conflito.
+- **Passos futuros:** Copiar/colar e observar a pergunta sobre herdar Tags e as escolhas de conflito.
+- **Resultado esperado:** Copiar pergunta sobre herdar Tags; o resultado SQL ainda aberto não é inventado.
+- **Limites e consequências:** [P-01](decisoes-e-pendencias.md#p-01) impede fechar UUID/associações na substituição e cadastro de cópia sem Tags. A origem física permanece; não aplicar resultado de movimento à cópia nem prometer reversão de etapas concluídas.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-21"></a>
 
-### ACE-21 — Um Refresh global sem duplicação
+## ACE-21
 
 - **Origem:** [SYN-01](requisitos-e-regras.md#syn-01), [SYN-03](requisitos-e-regras.md#syn-03).
-- **Condição e ação futuras:** acionar o botão Refresh único com os dois exploradores disponíveis.
-- **Resultado esperado:** atualizar todos os `LocalFile` uma vez por solicitação global e atualizar as duas apresentações. Notificações do Observer não disparam outro Refresh completo por Screen. Troca de aba e aplicação de filtros também exigem atualização global; navegação de cada pasta não é gatilho global.
-- **Limite:** não homologa um mecanismo de concorrência ou `SwingWorker`; prevenção interna de reentrância está em [P-12](decisoes-e-pendencias.md#p-12).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Dois exploradores disponíveis na sessão.
+- **Passos futuros:** Acionar o botão Refresh único e observar o alcance e a atualização visual.
+- **Resultado esperado:** O único Refresh atualiza todos os LocalFile e permite atualizar as duas apresentações sem duplicação.
+- **Limites e consequências:** Atualizar todos os LocalFile uma vez por solicitação; Observer não gera outro Refresh por Screen. [P-04](decisoes-e-pendencias.md#p-04)/[P-05](decisoes-e-pendencias.md#p-05)/[P-12](decisoes-e-pendencias.md#p-12) preservam contratos e mecanismo interno abertos.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-22"></a>
 
-### ACE-22 — Informar uma falha parcial
+## ACE-22
 
 - **Origem:** [ERR-01](requisitos-e-regras.md#err-01).
-- **Condição e ação futuras:** observar, em uma futura verificação controlada, falha após uma etapa concluída, como o exemplo aprovado de mover fisicamente e falhar ao persistir o novo caminho.
-- **Resultado esperado:** mensagem compreensível, indicação do que concluiu, do que falhou e área expansível de detalhes técnicos disponíveis. Informar SQLState, código MySQL ou código de processo somente quando existirem; encerrar Loading sem afirmar sucesso total ou reversão garantida.
-- **Limite:** nenhuma falha foi provocada nesta missão. Não há teste de recuperação ou promessa de que `autoReconnect=true` repete ou desfaz a operação.
-- **Estado de validação:** NÃO EXECUTADO.
-
-## Ambiente local
+- **Condição:** Falha posterior a uma etapa concluída, no exemplo de mover no disco e falhar ao salvar caminho.
+- **Passos futuros:** Na futura verificação controlada, observar a mensagem e a saída de Loading.
+- **Resultado esperado:** Falha parcial mostra o concluído, a falha e detalhes expansíveis.
+- **Limites e consequências:** Nenhuma falha foi provocada nesta missão. Incluir detalhes técnicos somente quando disponíveis; não garantir rollback, restauração ou repetição por autoReconnect.
+- **Estado:** não executado nesta missão.
 
 <a id="ace-23"></a>
 
-### ACE-23 — Preservar a configuração pública de referência
+## ACE-23
 
 - **Origem:** [AMB-02](instalacao-e-execucao.md#amb-02), [AMB-03](instalacao-e-execucao.md#amb-03).
-- **Condição e ação futuras:** conferir a configuração operacional quando os arquivos e a implementação existirem.
-- **Resultado esperado:** dados em `database/runtime/data`, relativos à raiz do projeto, porta `3333`, endereço `127.0.0.1`, banco `tag_file`, usuário `root`, senha didática pública `TagFile123!` e `autoReconnect=true`. Não redefinir credenciais ou dados de outras instâncias.
-- **Limite:** a presença desses valores na documentação não é validação do aplicativo. Não há configuração real de banco encontrada no repositório; versões e mecanismos de preparação seguem em [P-11](decisoes-e-pendencias.md#p-11).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Configuração operacional que será construída para a instância local.
+- **Passos futuros:** Conferir parâmetros e a localização dos dados em relação à raiz do projeto.
+- **Resultado esperado:** A configuração de referência usa dados dentro de database/runtime/data, porta 3333 e credenciais públicas definidas.
+- **Limites e consequências:** Referência completa em [AMB-03](instalacao-e-execucao.md#amb-03): 127.0.0.1, 3333, tag_file, root, senha didática pública TagFile123!, autoReconnect=true e database/runtime/data. Não alterar outras instâncias. Versões em [P-11](decisoes-e-pendencias.md#p-11).
+- **Estado:** não executado nesta missão.
 
 <a id="ace-24"></a>
 
-### ACE-24 — Solicitar autorização para instalar ausências
+## ACE-24
 
 - **Origem:** [AMB-01](instalacao-e-execucao.md#amb-01).
-- **Condição e ação futuras:** abrir o aplicativo em ambiente preparado para verificação futura no qual falte um componente necessário do cliente ou servidor MySQL; contemplar recusa/cancelamento.
-- **Resultado esperado:** identificar a ausência e solicitar autorização; Windows utiliza UAC na elevação prevista, e Linux contempla Ubuntu/Linux Mint. Cancelamento não é apresentado como instalação concluída. Falhas apresentam etapas e detalhes disponíveis.
-- **Limite:** `pkexec` é proposta, não requisito fechado. Não foram instalados, removidos ou executados componentes para criar essa condição; detecção e instaladores permanecem em [P-11](decisoes-e-pendencias.md#p-11).
-- **Estado de validação:** NÃO EXECUTADO.
+- **Condição:** Ambiente futuro no qual falte cliente ou servidor MySQL necessário.
+- **Passos futuros:** Abrir a aplicação e contemplar recusa ou cancelamento da autorização de instalação.
+- **Resultado esperado:** Ausência de componentes solicita autorização para instalar; cancelamento não é apresentado como sucesso.
+- **Limites e consequências:** UAC foi solicitado no Windows; Linux contempla Ubuntu/Mint, com pkexec apenas proposto. Instaladores/detecção em [P-11](decisoes-e-pendencias.md#p-11). Não remover ou instalar componentes nesta missão para produzir a condição.
+- **Estado:** não executado nesta missão.
 
-## Dependências que impedem o aceite completo de certos fluxos
+## Fluxos cujo resultado completo depende de decisão
 
-| Pendência | Parte confirmada que pode orientar cenários futuros | Resultado ainda não fechável |
+| Pendência | Parte confirmada | Resultado que continua aberto |
 |---|---|---|
-| [P-01](decisoes-e-pendencias.md#p-01) | ACE-20: manter origem física, perguntar sobre Tags e sobrescrever fisicamente o destino quando aprovado | UUID e associações na cópia/substituição; cadastro da cópia sem Tags. |
-| [P-02](decisoes-e-pendencias.md#p-02) | ACE-10/ACE-11 no fluxo comum; ACE-19 na clareza dos diálogos e na preservação física da modalidade 2 | Remoção imediata ou adiamento na modalidade 2 e remoção explícita de referência; destino da Tag selecionada. |
-| [P-03](decisoes-e-pendencias.md#p-03) | [TAG-04](requisitos-e-regras.md#tag-04) e [UC-05](casos-de-uso.md#uc-05): sugestão ao criar `LocalFile`, com opção de não perguntar novamente apenas na sessão; nova inicialização volta a permitir a pergunta | Silenciar sem associar automaticamente ou repetir a resposta nos próximos arquivos; não há aceite de uma política presumida. |
+| [P-01](decisoes-e-pendencias.md#p-01) | Copiar mantém origem física; herança de Tags é perguntada; Substituir sobrescreve fisicamente destino. | UUID/associações sobreviventes e LocalFile para cópia sem Tags; afeta [UC-08](casos-de-uso.md#uc-08)/[ACE-20](criterios-de-aceite.md#ace-20). |
+| [P-02](decisoes-e-pendencias.md#p-02) | Reorganização comum usa sentinela; modalidade 2 preserva disco e outras Tags globalmente. | Imediatismo/adiamento de registros, destino da Tag selecionada e coerência de remoção explícita; afeta [UC-11](casos-de-uso.md#uc-11)/[UC-12](casos-de-uso.md#uc-12)/[ACE-19](criterios-de-aceite.md#ace-19). |
+| [P-03](decisoes-e-pendencias.md#p-03) | Ao criar LocalFile, sugerir predefinida compatível; supressão somente na sessão. | Silenciar sem associar automaticamente ou repetir escolha. Afeta [TAG-04](requisitos-e-regras.md#tag-04) e [UC-04](casos-de-uso.md#uc-04)/[UC-05](casos-de-uso.md#uc-05). |
 
-O fluxo de sugestão não recebeu um novo identificador ACE neste documento: sua dependência foi mantida explícita para não apresentar o conjunto ACE-01 a ACE-24 como aprovação de todos os resultados do sistema. As verificações futuras de sugestão também estão **NÃO EXECUTADAS**. Múltiplas predefinidas compatíveis não têm critério final de escolha.
+Para a sugestão, a futura verificação deverá contemplar criação de registro, opção de suprimir perguntas na sessão e nova inicialização. A pergunta volta na próxima sessão; a política automática dentro da sessão não tem resultado fechado. Não foi criado um ACE adicional para escolher uma alternativa de [P-03](decisoes-e-pendencias.md#p-03). Várias predefinidas compatíveis também não têm critério final de escolha.
 
-[P-04 a P-13](decisoes-e-pendencias.md#p-04) continuam pertinentes aos contratos, modelo físico, identidade de Tags especiais, caminhos, validações, datas, ambiente, lotes e consultas. Nenhuma delas foi resolvida pela redação dos cenários. A revisão textual da documentação e de seus links é distinta de executar estes critérios de aceite; o relatório de entrega documental está no [índice](../README.md).
+[P-04](decisoes-e-pendencias.md#p-04) a [P-13](decisoes-e-pendencias.md#p-13) continuam pertinentes aos contratos e aos detalhes de dados, ambiente e interface. Os modelos, exemplos e critérios não substituem essas decisões. A [orientação de construção](arquitetura-e-padroes.md#bloco-verificacao) explica como relacionar comportamento e verificação sem introduzir ferramentas ou testes executáveis nesta entrega.

@@ -1,8 +1,8 @@
 # Visão geral do Tag-File
 
-[Índice](../README.md) · [Regras](requisitos-e-regras.md) · [Rastreabilidade](rastreabilidade.md)
+[Índice](README.md) · [Requisitos](requisitos-e-regras.md) · [Orientação de construção](arquitetura-e-padroes.md#orientacao-construcao)
 
-> **Situação:** especificação planejada para um projeto acadêmico. A inspeção em 13/09/2026 encontrou apenas o programa inicial da IDE em [src/Main.java](../src/Main.java), que imprime uma saudação e os números de 1 a 5. Os fluxos do Tag-File descritos aqui ainda não têm implementação correspondente no repositório inspecionado.
+**A documentação precede a implementação.** O objetivo é dar à equipe uma referência para compreender, discutir e construir o projeto. As funcionalidades abaixo são requisitos aprovados; as decisões abertas são indicadas por [P-01](decisoes-e-pendencias.md#p-01) a [P-13](decisoes-e-pendencias.md#p-13). A falta esperada de código não é uma pendência de modelagem.
 
 <a id="obj-01"></a>
 
@@ -10,7 +10,7 @@
 
 **Estado: confirmada.**
 
-O Tag-File é uma aplicação desktop para organizar e consultar arquivos locais por etiquetas. Um mesmo arquivo pode receber classificações diferentes e ser encontrado por essas classificações, sem depender apenas da hierarquia física de pastas.
+O Tag-File será uma aplicação desktop para organizar e consultar arquivos locais por etiquetas. Um mesmo arquivo pode receber classificações diferentes e ser encontrado por essas classificações, sem depender apenas da hierarquia física de pastas.
 
 Exemplo do próprio domínio:
 
@@ -21,7 +21,7 @@ Tags: Faculdade, PDF, Importante
 
 O usuário pode encontrá-lo pela etiqueta `Faculdade`, ainda que o arquivo esteja fisicamente em outra pasta. As etiquetas não são novas cópias do arquivo nem obrigam a armazenar seu conteúdo no MySQL.
 
-O aplicativo oferece uma visão dos arquivos classificados e uma visão do sistema de arquivos real. Essas visões são interoperáveis.
+O aplicativo deverá oferecer uma visão dos arquivos classificados e uma visão do sistema de arquivos real. Essas visões deverão ser interoperáveis.
 
 <a id="obj-02"></a>
 
@@ -31,11 +31,11 @@ O aplicativo oferece uma visão dos arquivos classificados e uma visão do siste
 
 O projeto é acadêmico, de Ciência da Computação, voltado a uma disciplina de Design Patterns. As tecnologias escolhidas são **Java, Swing e MySQL**. A equipe é composta por estudantes com pouco tempo para implementação e aprendizado de infraestrutura adicional.
 
-A documentação permite que a equipe compreenda o projeto e diferencie o que pretende construir do que já construiu. Os conceitos são explicados com exemplos do Tag-File, sem introduzir padrões apenas para aumentar a quantidade de nomes citados.
+A documentação precisa permitir que a equipe compreenda o que deverá construir, por que cada parte existe e como as responsabilidades colaboram. Ela também será a referência para explicar o projeto ao professor antes e durante o desenvolvimento. As explicações usam o próprio Tag-File e não acrescentam padrões apenas para aumentar a quantidade de nomes citados.
 
 GoF, GRASP, DAO e CRUD têm papéis distintos. Nem toda classe é um padrão de projeto. Uma Factory simples não se torna Factory Method ou Abstract Factory apenas por ter “Factory” no nome.
 
-Não foi fornecida uma rubrica formal com quantidade mínima de padrões, pontuação, data exata de entrega ou diagramas obrigatórios. Esta documentação não acrescenta esses critérios.
+Não foi fornecida uma rubrica formal com quantidade mínima de padrões, pontuação, data exata de entrega ou diagramas obrigatórios. Esses critérios não são acrescentados à documentação.
 
 <a id="obj-03"></a>
 
@@ -49,7 +49,9 @@ A navegação por pastas foi incluída. Isso não equivale a aprovar operações
 
 Não há requisito de armazenar o conteúdo dos arquivos no MySQL, criar uma biblioteca que renomeie internamente todos os arquivos, sincronizar com nuvem, gerenciar arquivos remotos ou adicionar contas de usuários do aplicativo.
 
-## Limites conscientes da versão
+<a id="restricoes"></a>
+
+## Restrições e limitações conhecidas
 
 | Tema | Restrição aprovada |
 |---|---|
@@ -68,32 +70,36 @@ Não há requisito de armazenar o conteúdo dos arquivos no MySQL, criar uma bib
 
 Essas restrições não autorizam afirmar garantias inexistentes. Falhas parciais, fragilidade de configuração administrativa e limitações de reconexão devem ser descritas.
 
-## Glossário de leitura
+A colaboração vigente das operações é a de [ARQ-03](arquitetura-e-padroes.md#arq-03), consolidada por [DEC-01](decisoes-e-pendencias.md#dec-01). O escopo funcional de mover, copiar, recortar, colar, renomear e excluir permanece aprovado. A simplificação da arquitetura não introduz novas camadas ou padrões compensatórios.
 
-| Termo | Significado no projeto |
+## Glossário para começar
+
+| Termo | Significado no Tag-File |
 |---|---|
-| Arquivo físico | Conteúdo presente no sistema de arquivos, fora do banco. |
-| `NativeFile` / `NativeDirectory` | Representações de um arquivo e de uma pasta por `Path`. Não implicam cadastro no SQL. |
-| `LocalFile` | Registro conhecido pelo Tag-File; possui UUID, metadados, referência nativa e associações. |
-| `Tag` / etiqueta | Classificação por identidade própria. O nome pode repetir mediante confirmação. |
-| UUID | Identificador do registro. Um movimento muda o caminho, preservando o UUID. |
-| Associação / join-table | Vínculo entre IDs de arquivo e Tag, persistido em `LOCAL_FILE_TAG`. |
-| Sentinela | Papel de `Etiqueta Ausente`: classificação temporária durante reorganização; a Tag em si permanece. |
-| Disponível | Arquivo conhecido como encontrado no caminho registrado. Não é sinônimo de classificado. |
-| Tag vazia | Tag sem associações. Ter zero arquivos disponíveis não basta para estar vazia. |
-| Filtro | Critérios da consulta; a seleção é o conjunto escolhido pelo usuário e o Command representa a ação. |
-| Refresh | Atualiza disponibilidade e metadados; não faz a limpeza de registros sem classificação. |
-| DAO / CRUD | DAO concentra acesso aos dados; CRUD designa criar, consultar, atualizar e excluir. |
-| GoF / GRASP | GoF reúne padrões de projeto; GRASP orienta a distribuição de responsabilidades. A aplicação concreta está em [arquitetura](arquitetura-e-padroes.md#arq-09). |
+| Arquivo físico | Conteúdo no sistema de arquivos; não é armazenado no MySQL por este projeto. |
+| NativeFile / NativeDirectory | Representações de arquivo e diretório por Path. Não implicam cadastro SQL. |
+| LocalFile | Registro conhecido pelo aplicativo, com UUID, metadados, referência nativa e Tags. |
+| Tag / etiqueta | Classificação com UUID próprio, nome, cor e possíveis restrições de extensão. |
+| UUID | Identificador do registro; não muda quando o arquivo é movido normalmente. |
+| Associação / join-table | Vínculo entre IDs de arquivo e Tag persistido em LOCAL_FILE_TAG. |
+| Sentinela | Papel de Etiqueta Ausente ao manter um registro acessível durante a reorganização. A associação é temporária; a Tag permanece. |
+| Disponibilidade | Estado conhecido no caminho salvo. É independente de ter ou não Tags. |
+| Filtro / seleção / operação | Critérios da busca / elementos escolhidos / ação sobre os elementos confirmados. |
+| Refresh | Sincronização de disponibilidade/metadados, distinta da limpeza exclusiva da inicialização. |
+| DAO / CRUD | DAO concentra acesso a dados; CRUD nomeia criar, consultar, atualizar e excluir. |
+| GoF / GRASP | GoF reúne padrões de projeto; GRASP orienta a distribuição de responsabilidades. A aplicação concreta está em [ARQ-09](arquitetura-e-padroes.md#arq-09). |
 
-As definições normativas e os atributos estão em [DOM-01 a DOM-04](modelo-de-dominio.md#dom-01). Operações que retiram uma associação, removem um registro ou apagam um arquivo físico têm consequências diferentes; veja [DEL-01 a DEL-04](requisitos-e-regras.md#del-01).
+## Exemplo que conecta o problema ao modelo
 
-## Exemplo que orienta a leitura
+`prova.pdf` poderá ser encontrado por `Faculdade`, `PDF` ou `Importante`, sem três cópias físicas. Na visão `Arquivos Local`, um arquivo poderá aparecer sem registro; ao associar a primeira Tag, a equipe deverá reutilizar ou criar o LocalFile necessário. Mover o arquivo manterá UUID e Tags e atualizará o caminho. A cópia preservará a origem física; sua identidade em substituição e o cadastro da cópia sem Tags dependem de [P-01](decisoes-e-pendencias.md#p-01).
 
-`prova.pdf` pode receber `Faculdade`, `PDF` e `Importante` sem gerar três cópias físicas. Ao mover esse arquivo pelo aplicativo, seu UUID e as Tags permanecem, e o caminho muda. Se outra ferramenta mover o arquivo, o próximo Refresh poderá detectar indisponibilidade; a relocalização depende do usuário. Na cópia, a origem física permanece, mas a identidade após substituição e o cadastro de cópias sem Tags continuam em [P-01](decisoes-e-pendencias.md#p-01).
+O projeto evoluiu de simples etiquetação para operações físicas e administração de uma instância local MySQL. As revisões relevantes estão em [decisões](decisoes-e-pendencias.md). O contexto do JDK 24 e do driver manual está em [AMB-06](instalacao-e-execucao.md#amb-06); não se presume uma migração anterior de bibliotecas ou versões não decididas.
 
-## Evolução do projeto e escopo de estudo
+## Sequência de estudo
 
-O histórico relevante para esta documentação é o das decisões consolidadas: a ideia de só etiquetar passou a incluir operações físicas e administração de uma instância local MySQL. Não há evidência de uma migração de ferramentas, atualização de bibliotecas ou implementação anterior a 2025 neste repositório. A configuração observada de JDK 24 é registrada em [AMB-06](instalacao-e-execucao.md#amb-06), sem transformá-la em recomendação de atualização.
+1. Identidade versus localização e composição entre objetos ([DOM-01](modelo-de-dominio.md#dom-01) a [DOM-04](modelo-de-dominio.md#dom-04)).
+2. Relações muitos-para-muitos e diferença entre associação, registro e disco ([SQL-01](banco-de-dados.md#sql-01) a [SQL-05](banco-de-dados.md#sql-05)).
+3. Distribuição de responsabilidades e Observer ([ARQ-01](arquitetura-e-padroes.md#arq-01) a [ARQ-09](arquitetura-e-padroes.md#arq-09)).
+4. Gatilhos de sincronização, falhas parciais e critérios de aceite (SYN, ERR, ACE).
 
-Para aprofundar, a equipe pode estudar identidade versus localização, composição de objetos, relações muitos-para-muitos, Command/Observer e limites de consistência entre disco e banco. Isso não amplia o escopo da versão nem cria critérios adicionais atribuídos ao professor.
+Essa sequência é editorial, não uma rubrica, cronograma ou ampliação do escopo. Os percursos práticos estão em [orientação para a implementação futura](arquitetura-e-padroes.md#orientacao-construcao).
