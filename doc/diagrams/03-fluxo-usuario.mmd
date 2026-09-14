@@ -1,0 +1,39 @@
+%% Fluxo de usuário — mapa de entrada para os percursos detalhados.
+%% Os retângulos duplos remetem aos arquivos em fluxo-usuario/.
+%% Fontes: doc/casos-de-uso.md:L13-L261; doc/interface-e-fluxos.md:L9-L38, L124-L156.
+%% Os agrupamentos organizam a leitura; não fixam um menu ou layout Swing.
+flowchart TD
+    start(["Abrir Tag-File"])
+    initialize[["Preparar ambiente e sessão<br>01-inicializacao · UC-01"]]
+    workspace{"O que deseja fazer?"}
+    start --> initialize --> workspace
+
+    subgraph explore["Encontrar arquivos"]
+        local[["Navegar por pastas<br>02-navegacao · UC-02"]]
+        byTag[["Pesquisar com Tags e AND/OR<br>02-navegacao · UC-03"]]
+        selection["Selecionar arquivo nos resultados"]
+        local --> selection
+        byTag --> selection
+    end
+    workspace -->|"Arquivos Local"| local
+    workspace -->|"Arquivos por Tag"| byTag
+    selection --> action{"Ação sobre o arquivo"}
+    action -->|"Classificar ou desassociar"| classify[["Associar / reorganizar<br>04-associacao e 05-reorganizacao"]]
+    action -->|"Operação física"| physical[["Copiar, mover, recortar, colar ou renomear<br>06-clipboard e 07-renomeacao"]]
+    action -->|"Abrir arquivo"| available[["Verificar disponibilidade e utilizar<br>08-disponibilidade-e-conflitos"]]
+
+    workspace -->|"Gerenciar etiquetas"| tags{"Qual ação na etiqueta?"}
+    tags -->|"Criar"| create[["Nome, cor e extensões<br>03-criacao-tag · UC-04"]]
+    tags -->|"Editar"| edit[["Editar dados e verificar compatibilidade<br>05-reorganizacao · UC-07"]]
+    tags -->|"Excluir / encontrar vazias"| remove[["Escolher modalidade e confirmar efeitos<br>09-exclusao · UC-12 e UC-13"]]
+
+    refresh[["Refresh, troca de aba ou filtros<br>10-refresh · UC-14"]]
+    workspace -.->|"Ação compartilhada entre visões"| refresh
+    result["Cada percurso retorna aos exploradores.<br>Falhas e Loading: 11-falhas · UC-15."]
+    refresh -.-> result
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class start trigger
+    class workspace,action,tags decision
+    class result success

@@ -1,16 +1,18 @@
-# Casos de uso
+# Casos de uso: ações e resultados
 
-[Índice](README.md) · [Rastreabilidade](rastreabilidade.md) · [Decisões e pendências](decisoes-e-pendencias.md)
+[Índice](README.md) · [Requisitos](requisitos-e-regras.md) · [Critérios de aceite](criterios-de-aceite.md)
 
-[UC-01](casos-de-uso.md#uc-01) a [UC-15](casos-de-uso.md#uc-15) organizam os percursos que a equipe deverá construir. Os documentos vinculados contêm a norma de cada assunto. **São fluxos futuros, não cenários executados.** A sequência funcional não determina a ordem técnica onde a especificação a deixou aberta.
+Um caso de uso descreve uma ação do usuário, seus passos e o resultado esperado. Use esta página ao construir uma funcionalidade. As regras detalhadas ficam nos links de cada caso.
 
-A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o banco conhece sobre o arquivo; o arquivo físico continua no sistema de arquivos. Cancelar uma ação pendente não desfaz etapas anteriores concluídas ([OP-07](requisitos-e-regras.md#op-07)).
+Arquivo físico, cadastro e associação são diferentes: retirar uma etiqueta não significa apagar o arquivo. Cancelar impede a ação ainda não confirmada, mas não desfaz etapas já concluídas. Alguns contratos e a ordem técnica de certas operações continuam em aberto, conforme indicado.
+
+As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertura completa. As regras e pendências continuam sendo a referência para o restante do comportamento.
 
 <a id="uc-01"></a>
 
 ## UC-01 — Preparar e abrir o Tag-File
 
-**Origem:** [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-06](instalacao-e-execucao.md#amb-06), [CIC-02](requisitos-e-regras.md#cic-02), [SYN-01](requisitos-e-regras.md#syn-01). **Estado:** fluxo funcional confirmado; comandos específicos não homologados.
+**Regras:** [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-06](instalacao-e-execucao.md#amb-06), [CIC-02](requisitos-e-regras.md#cic-02), [SYN-01](requisitos-e-regras.md#syn-01). Os comandos específicos ainda precisam ser definidos.
 
 **Gatilho:** abertura do aplicativo.
 
@@ -20,13 +22,13 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Alternativas e falhas:** recusa ou cancelamento da autorização não significa instalação concluída. Falha em uma etapa deve ser mostrada com seu resultado parcial. Não tratar erro de conexão como prova de que o diretório precisa ser reinicializado. As políticas exatas de recuperação de instalação ou schema parcialmente preparado não estão fechadas.
 
-**Não executar esta sequência na missão documental.** Descrever o comportamento planejado e a responsabilidade dos scripts que a equipe deverá construir. Não exigir que esses scripts já existam para documentar a preparação.
+**Verificação relacionada:** [ACE-12](criterios-de-aceite.md#ace-12), [ACE-23](criterios-de-aceite.md#ace-23) e [ACE-24](criterios-de-aceite.md#ace-24): limpeza inicial, parâmetros e autorização. Não cobrem todos os procedimentos de instalação, alteração de schema ou encerramento.
 
 <a id="uc-02"></a>
 
 ## UC-02 — Navegar em Arquivos Local
 
-**Origem:** [DOM-01](modelo-de-dominio.md#dom-01), [EXP-01](interface-e-fluxos.md#exp-01) a [EXP-03](interface-e-fluxos.md#exp-03), [UI-02](interface-e-fluxos.md#ui-02), [SYN-01](requisitos-e-regras.md#syn-01).
+**Regras:** [DOM-01](modelo-de-dominio.md#dom-01), [EXP-01](interface-e-fluxos.md#exp-01) a [EXP-03](interface-e-fluxos.md#exp-03), [UI-02](interface-e-fluxos.md#ui-02), [SYN-01](requisitos-e-regras.md#syn-01).
 
 **Gatilho:** abrir a visão local ou navegar para um `NativeDirectory`.
 
@@ -36,11 +38,13 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Diretórios:** podem ser mostrados para navegação e escolhidos como destino. Isso não aprova registrá-los como `LocalFile` ou executar operações recursivas sobre eles.
 
+**Verificação relacionada:** [ACE-01](criterios-de-aceite.md#ace-01), [ACE-03](criterios-de-aceite.md#ace-03) e [ACE-16](criterios-de-aceite.md#ace-16): navegação sem cadastro automático, arquivos de mesmo nome e correspondências em lote.
+
 <a id="uc-03"></a>
 
 ## UC-03 — Pesquisar em Arquivos por Tag
 
-**Origem:** [EXP-01](interface-e-fluxos.md#exp-01), [EXP-02](interface-e-fluxos.md#exp-02), [EXP-04](interface-e-fluxos.md#exp-04), [SYN-01](requisitos-e-regras.md#syn-01).
+**Regras:** [EXP-01](interface-e-fluxos.md#exp-01), [EXP-02](interface-e-fluxos.md#exp-02), [EXP-04](interface-e-fluxos.md#exp-04), [SYN-01](requisitos-e-regras.md#syn-01).
 
 **Gatilho:** seleção de uma ou várias Tags e aplicação de critérios.
 
@@ -50,11 +54,13 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Pendências:** encaixe concreto de `TagFilter`/consulta de associações em [P-05](decisoes-e-pendencias.md#p-05), resultado sem Tags selecionadas e ordenação em [P-13](decisoes-e-pendencias.md#p-13). A Screen observadora não deve iniciar novamente o Refresh global apenas por ter recebido a notificação dessa atualização.
 
+**Verificação relacionada:** [ACE-15](criterios-de-aceite.md#ace-15): AND/OR. Busca sem Tag, ordenação e API continuam nas pendências indicadas.
+
 <a id="uc-04"></a>
 
 ## UC-04 — Criar uma Tag e associar arquivos iniciais
 
-**Origem:** [TAG-01](requisitos-e-regras.md#tag-01), [TAG-02](requisitos-e-regras.md#tag-02), [EXT-01](requisitos-e-regras.md#ext-01), [OP-01](requisitos-e-regras.md#op-01), [ARQ-02](arquitetura-e-padroes.md#arq-02).
+**Regras:** [TAG-01](requisitos-e-regras.md#tag-01), [TAG-02](requisitos-e-regras.md#tag-02), [EXT-01](requisitos-e-regras.md#ext-01), [OP-01](requisitos-e-regras.md#op-01), [ARQ-02](arquitetura-e-padroes.md#arq-02).
 
 **Entrada:** nome, cor hexadecimal, restrições opcionais de extensão e seleção opcional de arquivos.
 
@@ -66,11 +72,13 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Limites:** não adicionar uma Tag vazia artificial para cada pasta, não importar subpastas e não criar duplicatas de `LocalFile` pelo mesmo caminho.
 
+**Verificação relacionada:** [ACE-02](criterios-de-aceite.md#ace-02), [ACE-04](criterios-de-aceite.md#ace-04), [ACE-05](criterios-de-aceite.md#ace-05), [ACE-06](criterios-de-aceite.md#ace-06) e [ACE-09](criterios-de-aceite.md#ace-09): reutilização de cadastro, extensões e nome repetido. A sugestão de predefinida segue TAG-04/P-03.
+
 <a id="uc-05"></a>
 
 ## UC-05 — Associar arquivo a Tag existente
 
-**Origem:** [OP-01](requisitos-e-regras.md#op-01), [EXT-02](requisitos-e-regras.md#ext-02), [DOM-02](modelo-de-dominio.md#dom-02), [CIC-01](requisitos-e-regras.md#cic-01), [TAG-04](requisitos-e-regras.md#tag-04).
+**Regras:** [OP-01](requisitos-e-regras.md#op-01), [EXT-02](requisitos-e-regras.md#ext-02), [DOM-02](modelo-de-dominio.md#dom-02), [CIC-01](requisitos-e-regras.md#cic-01), [TAG-04](requisitos-e-regras.md#tag-04).
 
 **Gatilho:** seleção individual ou Drop de arquivo na representação da Tag, a partir do explorador externo ou interno.
 
@@ -78,15 +86,17 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Identidade:** se o caminho já estiver cadastrado, usar o mesmo UUID.
 
-**Sugestão adicional:** quando um novo `LocalFile` for criado, aplicar o fluxo de sugestão de Tag predefinida, respeitando [TAG-04](requisitos-e-regras.md#tag-04) e a pendência [P-03](decisoes-e-pendencias.md#p-03). Não há base para repetir essa sugestão em toda consulta de um registro já existente.
+**Sugestão adicional:** quando um novo `LocalFile` for criado, aplicar o fluxo de sugestão de Tag predefinida, respeitando [TAG-04](requisitos-e-regras.md#tag-04) e a pendência [P-03](decisoes-e-pendencias.md#p-03). A sugestão é ligada à criação do cadastro, não a cada consulta de um registro existente.
 
 **Cancelamento:** não associar uma extensão incompatível nem modificar a Tag sem a decisão correspondente. Uma nova Tag criada a partir do diálogo não autoriza supor outras associações não confirmadas.
+
+**Verificação relacionada:** [ACE-02](criterios-de-aceite.md#ace-02), [ACE-06](criterios-de-aceite.md#ace-06), [ACE-07](criterios-de-aceite.md#ace-07) e [ACE-11](criterios-de-aceite.md#ace-11): reutilização, compatibilidade e retirada da sentinela. A sugestão de predefinida continua limitada por P-03.
 
 <a id="uc-06"></a>
 
 ## UC-06 — Remover uma associação durante a reorganização
 
-**Origem:** [CIC-01](requisitos-e-regras.md#cic-01), [DEL-01](requisitos-e-regras.md#del-01) quando aplicável, [UI-02](interface-e-fluxos.md#ui-02).
+**Regras:** [CIC-01](requisitos-e-regras.md#cic-01), [DEL-01](requisitos-e-regras.md#del-01) quando aplicável, [UI-02](interface-e-fluxos.md#ui-02).
 
 **Entrada:** um registro e uma associação escolhida.
 
@@ -94,15 +104,17 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Efeitos:** o arquivo físico continua intacto e o registro continua acessível durante a sessão. Receber uma nova Tag normal retira a sentinela.
 
-**Limite:** não usar este caso para resolver silenciosamente a modalidade explícita de remoção de todos os registros, que está em [P-02](decisoes-e-pendencias.md#p-02).
+**Limite:** a remoção explícita de todos os registros tem seu alcance pendente em [P-02](decisoes-e-pendencias.md#p-02).
+
+**Verificação relacionada:** [ACE-10](criterios-de-aceite.md#ace-10): retirada da última Tag normal durante a reorganização.
 
 <a id="uc-07"></a>
 
 ## UC-07 — Editar uma Tag
 
-**Origem:** [TAG-01](requisitos-e-regras.md#tag-01), [EXT-01](requisitos-e-regras.md#ext-01), [EXT-03](requisitos-e-regras.md#ext-03), [DOM-04](modelo-de-dominio.md#dom-04).
+**Regras:** [TAG-01](requisitos-e-regras.md#tag-01), [EXT-01](requisitos-e-regras.md#ext-01), [EXT-03](requisitos-e-regras.md#ext-03), [DOM-04](modelo-de-dominio.md#dom-04).
 
-**Operações discutidas:** editar os dados da etiqueta, incluindo nome, cor e extensões; identidade permanece associada ao UUID, não ao nome.
+**Ação:** editar os dados da etiqueta, incluindo nome, cor e extensões; identidade permanece associada ao UUID, não ao nome.
 
 **Para extensões:** considerar o conjunto final; identificar os arquivos que se tornarão incompatíveis; listar os afetados e aguardar confirmação; remover somente as associações incompatíveis quando autorizado; aplicar `Etiqueta Ausente` aos arquivos que perderem a última Tag normal.
 
@@ -110,25 +122,31 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Pendências:** detalhes da validação de nome/cor, edição de campos especiais de `Etiqueta Ausente`, efeito exato de determinadas ações em `lastFileTaggedAt` e UI de mudanças em lote.
 
+**Verificação relacionada:** [ACE-08](criterios-de-aceite.md#ace-08): efeito da alteração de restrições. [ACE-04](criterios-de-aceite.md#ace-04), [ACE-05](criterios-de-aceite.md#ace-05) e [ACE-06](criterios-de-aceite.md#ace-06) apoiam a configuração de extensões; não verificam integralmente nome, cor e datas.
+
 <a id="uc-08"></a>
 
 ## UC-08 — Copiar arquivo, com ou sem substituição
 
-**Origem:** [OP-04](requisitos-e-regras.md#op-04), [OP-06](requisitos-e-regras.md#op-06), [OP-08](requisitos-e-regras.md#op-08), [P-01](decisoes-e-pendencias.md#p-01).
+**Regras:** [OP-04](requisitos-e-regras.md#op-04), [OP-06](requisitos-e-regras.md#op-06), [OP-08](requisitos-e-regras.md#op-08).
 
-**Gatilho:** copiar/colar um arquivo com destino escolhido. A ação de copiar não exige integração com o clipboard do sistema operacional.
+**Entrada:** arquivo de origem e pasta de destino, usando o clipboard interno.
 
-**Sequência confirmada:** manter a origem; criar a cópia física; perguntar sobre herdar Tags; se o destino conflitar, oferecer as alternativas aprovadas conforme aplicáveis. “Substituir” sobrescreve fisicamente o arquivo de destino. “Manter os dois” exige caminhos distintos.
+**Interações necessárias:** perguntar se a cópia deve herdar Tags e, quando houver conflito, apresentar Substituir, Manter os dois ou Cancelar, conforme aplicável.
 
-**Efeitos não fechados:** UUID e associações sobreviventes durante a substituição; existência de `LocalFile` para cópia sem Tags. Documentar [P-01](decisoes-e-pendencias.md#p-01) e os exemplos conflitantes sem escolher a interpretação.
+**Efeitos definidos:** a origem física permanece. Uma cópia bem-sucedida produz outro arquivo físico. Substituir sobrescreve fisicamente o destino; Manter os dois conserva caminhos distintos.
 
-**Cancelamento/falha:** não afirmar que cancelar uma etapa reverte automaticamente uma cópia já criada; a ordenação ainda não aprovada do fluxo deve permanecer identificada como não definida, sem ser deduzida de uma implementação. Resultados parciais seguem [ERR-01](requisitos-e-regras.md#err-01).
+**Decisões abertas:** a identidade e as associações que sobrevivem na substituição e o cadastro de cópia sem Tags permanecem em [P-01](decisoes-e-pendencias.md#p-01). A ordem completa das confirmações e da execução ainda precisa ser definida; a lista de efeitos acima não é uma sequência operacional.
+
+**Cancelamento e falha:** cancelar não autoriza a ação ainda pendente. Não há garantia de desfazer uma etapa já concluída. Em resultado parcial, aplicar [ERR-01](requisitos-e-regras.md#err-01), distinguindo disco e SQL.
+
+**Verificação relacionada:** [ACE-20](criterios-de-aceite.md#ace-20): herança de Tags e alternativas de conflito, com o resultado SQL limitado por P-01.
 
 <a id="uc-09"></a>
 
 ## UC-09 — Recortar em uma visão e colar na outra
 
-**Origem:** [OP-03](requisitos-e-regras.md#op-03), [OP-08](requisitos-e-regras.md#op-08), [EXP-01](interface-e-fluxos.md#exp-01).
+**Regras:** [OP-03](requisitos-e-regras.md#op-03), [OP-08](requisitos-e-regras.md#op-08), [EXP-01](interface-e-fluxos.md#exp-01).
 
 **Cenário:** selecionar `prova.pdf` na Tag `Faculdade`, recortar e colar em `~/Documentos/Faculdade` pela visão local.
 
@@ -140,11 +158,13 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Exceções:** conflitos seguem [OP-06](requisitos-e-regras.md#op-06); arquivo desaparecido segue [OP-02](requisitos-e-regras.md#op-02); falha de disco/banco segue [ERR-01](requisitos-e-regras.md#err-01). Não há política fechada de repetição de colagem CUT ou limpeza do clipboard após sucesso.
 
+**Verificação relacionada:** [ACE-17](criterios-de-aceite.md#ace-17): preservação de UUID/Tags no movimento. O estado posterior do clipboard continua em P-12.
+
 <a id="uc-10"></a>
 
 ## UC-10 — Renomear arquivo
 
-**Origem:** [OP-05](requisitos-e-regras.md#op-05), [EXT-02](requisitos-e-regras.md#ext-02)/[EXT-03](requisitos-e-regras.md#ext-03) por compatibilidade, [CIC-01](requisitos-e-regras.md#cic-01).
+**Regras:** [OP-05](requisitos-e-regras.md#op-05), [EXT-02](requisitos-e-regras.md#ext-02)/[EXT-03](requisitos-e-regras.md#ext-03) por compatibilidade, [CIC-01](requisitos-e-regras.md#cic-01).
 
 **Entrada:** arquivo escolhido e novo nome.
 
@@ -152,15 +172,17 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Com mudança de extensão:** identificar Tags incompatíveis e oferecer retirar essas Tags, acrescentar a nova extensão a elas ou cancelar. Somente prosseguir conforme a decisão. Preservar as associações compatíveis.
 
-**Exemplo:** `prova.pdf` com Tags `PDF` e `Faculdade` sem restrição passa a `prova.txt`. Se o usuário escolher retirar as incompatíveis, `Faculdade` permanece. Se ela também não existir, [CIC-01](requisitos-e-regras.md#cic-01) cobre a perda da última Tag normal.
+**Exemplo:** `prova.pdf` com a Tag `PDF` restrita a `.pdf` e a Tag `Faculdade` sem restrição passa a `prova.txt`. Se o usuário escolher retirar as incompatíveis, `Faculdade` permanece. Se ela também não existir, [CIC-01](requisitos-e-regras.md#cic-01) cobre a perda da última Tag normal.
 
 **Limite:** renomear não converte o conteúdo. Tratamento de conflito com outro nome existente é o de [OP-06](requisitos-e-regras.md#op-06), sem uma matriz por operação ainda aprovada.
+
+**Verificação relacionada:** [ACE-18](criterios-de-aceite.md#ace-18): alternativas diante da nova extensão incompatível.
 
 <a id="uc-11"></a>
 
 ## UC-11 — Relocalizar ou remover referência indisponível
 
-**Origem:** [OP-02](requisitos-e-regras.md#op-02), [DOM-02](modelo-de-dominio.md#dom-02), [SYN-01](requisitos-e-regras.md#syn-01), [P-02](decisoes-e-pendencias.md#p-02).
+**Regras:** [OP-02](requisitos-e-regras.md#op-02), [DOM-02](modelo-de-dominio.md#dom-02), [SYN-01](requisitos-e-regras.md#syn-01), [P-02](decisoes-e-pendencias.md#p-02).
 
 **Gatilho:** tentativa de usar um arquivo não encontrado no caminho salvo.
 
@@ -168,13 +190,15 @@ A associação é o vínculo entre um LocalFile e uma Tag. O registro é o que o
 
 **Relocalização bem-sucedida:** o registro conserva UUID e Tags e passa a referenciar o novo endereço. Isso é atualização da referência, não afirmação de que o Tag-File descobriu sozinho o movimento externo.
 
-**Pendência:** colisão com um registro existente no caminho indicado e a relação da remoção explícita com o adiamento de [CIC-01](requisitos-e-regras.md#cic-01). Não fundir registros nem apagar arquivo físico por inferência.
+**Pendência:** colisão com um registro existente no caminho indicado e a relação da remoção explícita com o adiamento de [CIC-01](requisitos-e-regras.md#cic-01). Não há fusão automática de registros nem exclusão física nesse fluxo.
+
+**Verificação relacionada:** Não há ACE específico para este fluxo. Conferir [OP-02](requisitos-e-regras.md#op-02), [P-02](decisoes-e-pendencias.md#p-02) e [P-08](decisoes-e-pendencias.md#p-08); os critérios de associação não comprovam relocalização.
 
 <a id="uc-12"></a>
 
 ## UC-12 — Excluir Tag em uma das três modalidades
 
-**Origem:** [DEL-01](requisitos-e-regras.md#del-01) a [DEL-04](requisitos-e-regras.md#del-04), [CIC-01](requisitos-e-regras.md#cic-01), [P-02](decisoes-e-pendencias.md#p-02).
+**Regras:** [DEL-01](requisitos-e-regras.md#del-01) a [DEL-04](requisitos-e-regras.md#del-04), [CIC-01](requisitos-e-regras.md#cic-01), [P-02](decisoes-e-pendencias.md#p-02).
 
 **Entrada:** Tag selecionada por identidade e modalidade explicitamente escolhida.
 
@@ -188,23 +212,27 @@ Antes de afetar outras Tags por remoção de registro/arquivo, listar essas etiq
 
 Não prometer execução atômica nem reversão. Se houver falha parcial, informar as etapas e não apresentar o conjunto como integralmente concluído.
 
+**Verificação relacionada:** [ACE-19](criterios-de-aceite.md#ace-19) e [ACE-14](criterios-de-aceite.md#ace-14): consequências e proteção da sentinela. [ACE-10](criterios-de-aceite.md#ace-10) apoia a retirada da última Tag normal; a modalidade 2 permanece em P-02.
+
 <a id="uc-13"></a>
 
 ## UC-13 — Localizar Tags vazias
 
-**Origem:** [TAG-03](requisitos-e-regras.md#tag-03), [TAG-02](requisitos-e-regras.md#tag-02).
+**Regras:** [TAG-03](requisitos-e-regras.md#tag-03), [TAG-02](requisitos-e-regras.md#tag-02).
 
 **Gatilho:** funcionalidade solicitada para encontrar etiquetas sem associações e permitir removê-las.
 
 **Resultado:** identificar ausência real de associações, não apenas ausência de arquivos disponíveis. Proteger `Etiqueta Ausente`. As confirmações aplicáveis às demais Tags continuam valendo.
 
-**Não definido:** disposição visual, filtros auxiliares, seleção múltipla de Tags vazias e automação dessa limpeza. Não transformá-la em exclusão automática recorrente.
+**Pendente:** disposição visual, filtros auxiliares, seleção múltipla e automação da busca de Tags vazias. O fluxo definido permite localizar e escolher o que excluir; não há exclusão automática recorrente.
+
+**Verificação relacionada:** [ACE-14](criterios-de-aceite.md#ace-14) confere a proteção de Etiqueta Ausente. A busca geral de Tags vazias deve ser conferida também pela regra [TAG-03](requisitos-e-regras.md#tag-03).
 
 <a id="uc-14"></a>
 
 ## UC-14 — Refresh e filtros
 
-**Origem:** [SYN-01](requisitos-e-regras.md#syn-01) a [SYN-03](requisitos-e-regras.md#syn-03), [UI-03](interface-e-fluxos.md#ui-03), [ARQ-05](arquitetura-e-padroes.md#arq-05) a [ARQ-07](arquitetura-e-padroes.md#arq-07).
+**Regras:** [SYN-01](requisitos-e-regras.md#syn-01) a [SYN-03](requisitos-e-regras.md#syn-03), [UI-03](interface-e-fluxos.md#ui-03), [ARQ-05](arquitetura-e-padroes.md#arq-05) a [ARQ-07](arquitetura-e-padroes.md#arq-07).
 
 **Gatilho:** botão Refresh único, troca de aba ou aplicação de filtros; a inicialização também atualiza todos, mas possui sua limpeza própria.
 
@@ -212,13 +240,15 @@ Não prometer execução atômica nem reversão. Se houver falha parcial, inform
 
 **Invariantes:** não limpar `Etiqueta Ausente`; não atualizar todos novamente apenas porque cada Screen recebeu evento; não iniciar Refresh por toda navegação de pasta.
 
-**Implementação interna:** não foi fechada a escolha de `SwingWorker` nem um mecanismo de fila. Documente a necessidade de não congelar a UI e a ausência de pool, sem introduzir infraestrutura como fato aprovado.
+**Implementação interna:** a interface precisa permanecer responsiva. SwingWorker é uma alternativa de estudo; a escolha e a coordenação de tarefas continuam em P-12. A versão não usa pool de conexões. Veja o [Observer e Swing](arquitetura-e-padroes.md#arq-06).
+
+**Verificação relacionada:** [ACE-13](criterios-de-aceite.md#ace-13) e [ACE-21](criterios-de-aceite.md#ace-21): ausência de limpeza na sessão e atualização sem duplicação.
 
 <a id="uc-15"></a>
 
 ## UC-15 — Apresentar falha parcial
 
-**Origem:** [ERR-01](requisitos-e-regras.md#err-01), [SQL-05](banco-de-dados.md#sql-05), [AMB-05](instalacao-e-execucao.md#amb-05).
+**Regras:** [ERR-01](requisitos-e-regras.md#err-01), [SQL-05](banco-de-dados.md#sql-05), [AMB-05](instalacao-e-execucao.md#amb-05).
 
 **Gatilho:** uma consulta, etapa física, persistência ou processo externo falha.
 
@@ -226,14 +256,6 @@ Não prometer execução atômica nem reversão. Se houver falha parcial, inform
 
 **Sem garantias:** não dizer que `autoReconnect=true` desfez ou repetiu uma operação; não prometer recuperação física ou transação entre banco e disco. Falha de instalação também não autoriza apagar dados existentes.
 
-**Documentação:** apresente logs somente como exemplos ilustrativos e omita segredos de eventuais materiais de apoio. Não atribua resultados de execução real aos cenários planejados.
+Diagnósticos devem usar somente os detalhes disponíveis e não expor credenciais pessoais.
 
-## Efeitos e colaboradores nos percursos principais
-
-| Percurso | Memória e coordenação | Banco | Disco e apresentação |
-|---|---|---|---|
-| [UC-05](casos-de-uso.md#uc-05): associar `prova.pdf` a `Faculdade` | A Screen encaminha a escolha; Controller aciona colaboradores aprovados. Reutilizar identidade do caminho ou construir entidade pela Factory. | Persistir associação; retirar sentinela se receber Tag normal. | Não mover nem copiar o conteúdo; apresentar as Tags. Se um LocalFile foi criado, a sugestão segue [TAG-04](requisitos-e-regras.md#tag-04) e [P-03](decisoes-e-pendencias.md#p-03). |
-| [UC-09](casos-de-uso.md#uc-09): recortar e colar entre visões | ClipboardService guarda CUT; o Controller de destino chama NativeFileService e, para registro existente, LocalFileManager. | Salvar o novo caminho com o mesmo UUID e Tags. | Mover somente ao colar; após sucesso, mostrar arquivo e Tags no destino. Falhas entre etapas seguem [ERR-01](requisitos-e-regras.md#err-01). |
-| [UC-14](casos-de-uso.md#uc-14): Refresh | Mostrar Loading; Controller solicita atualização global por LocalFileManager uma vez. | Sincronizar disponibilidade e metadados conforme [SYN-02](requisitos-e-regras.md#syn-02). Não limpar registros. | Ler metadados e atualizar as apresentações; evento não inicia outro Refresh. |
-
-As assinaturas de eventos/consultas continuam em [P-04](decisoes-e-pendencias.md#p-04)/[P-05](decisoes-e-pendencias.md#p-05). Atribuições não fechadas de validação entre Factory, entidade e serviço não são resolvidas por essa tabela. [P-12](decisoes-e-pendencias.md#p-12) mantém em aberto lotes e estado do clipboard depois de colar. O fluxo [UC-04](casos-de-uso.md#uc-04) também deverá aplicar [TAG-04](requisitos-e-regras.md#tag-04) quando criar LocalFile: a duração da supressão está definida, mas seu efeito automático continua em [P-03](decisoes-e-pendencias.md#p-03).
+**Verificação relacionada:** [ACE-22](criterios-de-aceite.md#ace-22): mensagem do resultado parcial e encerramento de Loading. Recuperação e política de lotes continuam abertas.

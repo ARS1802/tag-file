@@ -1,0 +1,40 @@
+%% MER lógico — todos os dados documentados, sem fixar o DDL pendente.
+%% Fontes: doc/banco-de-dados.md:L9-L98; doc/modelo-de-dominio.md:L70-L100.
+%% [NEEDS INVESTIGATION] P-06: nomes físicos, tipos, nulabilidade, índices,
+%% PKs das tabelas de vínculo e colunas próprias para nome/extensão.
+%% UUID/TEXTO/NUMERO/LOGICO são tipos lógicos; DATETIME está definido no projeto.
+%% PK = identidade; FK = referência; UK = unicidade lógica de caminho.
+%% FK não implica CASCADE. Linhas pontilhadas não fixam uma PK composta.
+%% EXTENSOES_DA_TAG é rótulo provisório; o par tagId/extension é único.
+%% Não existe contador persistido em TAG: a quantidade disponível é calculada.
+%% nativeFile é representado pelo path; coleções são representadas pelas relações.
+erDiagram
+    LOCAL_FILE {
+        UUID id PK "Tipo SQL pendente"
+        TEXTO path UK "Caminho mutável; comparação pendente"
+        TEXTO name "Coluna própria pendente: P-06"
+        TEXTO extension "Coluna própria pendente: P-06"
+        NUMERO size "Bytes e BIGINT são propostas"
+        LOGICO available "Disponibilidade conhecida"
+        DATETIME createdAt "Criação física do arquivo"
+        DATETIME modifiedAt "Modificação física do arquivo"
+        DATETIME lastAccessedAt "Último acesso físico"
+    }
+    LOCAL_FILE_TAG {
+        UUID localFileId FK "Referencia LOCAL_FILE.id"
+        UUID tagId FK "Referencia TAG.id"
+    }
+    TAG {
+        UUID id PK "Tipo SQL pendente"
+        TEXTO name "Repetição permitida com confirmação"
+        TEXTO color "Hexadecimal; formato em P-09"
+        DATETIME createdAt "Criação da etiqueta"
+        DATETIME lastFileTaggedAt "Última marcação; detalhes em P-10"
+    }
+    EXTENSOES_DA_TAG {
+        UUID tagId FK "Referencia TAG.id; par único"
+        TEXTO extension "Minúscula com ponto; par único"
+    }
+    LOCAL_FILE ||..o{ LOCAL_FILE_TAG : possui
+    TAG ||..o{ LOCAL_FILE_TAG : classifica
+    TAG ||..o{ EXTENSOES_DA_TAG : permite

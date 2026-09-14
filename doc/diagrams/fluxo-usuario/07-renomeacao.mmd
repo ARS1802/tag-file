@@ -1,0 +1,36 @@
+%% Fluxo de usuário — UC-10: renomeação e compatibilidade da nova extensão.
+%% Fontes: doc/casos-de-uso.md:L165-L179; doc/requisitos-e-regras.md:L168-L190.
+%% [NEEDS INVESTIGATION] P-08: conflitos por operação; ordem de escritas não fechada.
+flowchart TD
+    start(["Escolher Renomear e informar novo nome"])
+    available[["Conferir disponibilidade do arquivo<br>08-disponibilidade-e-conflitos"]]
+    incompatible{"A nova extensão torna Tags incompatíveis?"}
+    choice{"Como tratar as Tags incompatíveis?"}
+    remove["Autorizar retirada somente<br>das associações incompatíveis"]
+    extend["Autorizar a nova extensão<br>nas Tags incompatíveis"]
+    conflicts[["Tratar conflito de nome ou caminho<br>08-disponibilidade-e-conflitos · P-08"]]
+    apply["Executar a renomeação autorizada<br>e os ajustes de classificação confirmados"]
+    lastTag{"Arquivo cadastrado ficou sem Tag normal?"}
+    sentinel["Associar Etiqueta Ausente"]
+    result(["Atualizar caminho e apresentação;<br>preservar UUID e Tags compatíveis"])
+    cancel(["Cancelar a ação ainda não confirmada"])
+    content["Mudar a extensão no nome<br>não converte o conteúdo do arquivo."]
+    start --> available
+    available -->|"Disponível ou relocalizado"| incompatible
+    available -->|"Cancelar"| cancel
+    incompatible -->|"Não"| conflicts
+    incompatible -->|"Sim"| choice
+    choice -->|"Retirar Tags incompatíveis"| remove --> conflicts
+    choice -->|"Ampliar restrições"| extend --> conflicts
+    choice -->|"Cancelar"| cancel
+    conflicts -->|"Prosseguir"| apply --> lastTag
+    conflicts -->|"Cancelar"| cancel
+    lastTag -->|"Sim"| sentinel --> result
+    lastTag -->|"Não / arquivo sem cadastro"| result
+    apply -.-> content
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class start trigger
+    class incompatible,choice,lastTag decision
+    class result success

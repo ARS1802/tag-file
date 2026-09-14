@@ -1,0 +1,45 @@
+%% Diagrama de classes — criação única, composição e contratos de consulta.
+%% Fontes: doc/arquitetura-e-padroes.md:L101-L138; doc/interface-e-fluxos.md:L63-L96.
+%% Fontes: doc/modelo-de-dominio.md:L13-L50, L130-L134.
+%% [NEEDS INVESTIGATION] P-05: assinaturas de consultas; reconstrução ainda sem contrato.
+classDiagram
+    direction TB
+    class EntityFactory
+    class LocalFile
+    class Tag
+    class NativeFile
+    class NativeDirectory
+    class Path
+    class Filter {
+        <<abstract>>
+    }
+    class NativeFileFilter
+    class LocalFileFilter
+    class TagFilter
+    class CrudDAO {
+        <<interface>>
+    }
+    class LocalFileDAO
+    class TagDAO
+    class LocalFileTagDAO
+    EntityFactory ..> LocalFile : cria
+    EntityFactory ..> Tag : cria
+    LocalFile *-- NativeFile : contém
+    NativeFile --> Path : encapsula
+    NativeDirectory --> Path : encapsula
+    LocalFile "0..*" -- "0..*" Tag : associações
+    Filter <|-- NativeFileFilter
+    Filter <|-- LocalFileFilter
+    Filter <|-- TagFilter
+    CrudDAO <|.. LocalFileDAO : "T = LocalFile, F = LocalFileFilter"
+    CrudDAO <|.. TagDAO : "T = Tag, F = TagFilter"
+    LocalFileDAO ..> LocalFile : reconstrói
+    TagDAO ..> Tag : reconstrói com extensões
+    LocalFileTagDAO ..> LocalFile : consulta vínculos
+    LocalFileTagDAO ..> Tag : associa por UUID
+    note for CrudDAO "Contrato: CrudDAO&lt;T, F extends Filter&gt;.<br>Criação, consulta por UUID/filtro, atualização e exclusão.<br>Assinaturas e retornos ainda abertos."
+    note for EntityFactory "Factory simples única.<br>NativeFile e NativeDirectory são criados diretamente."
+    note for LocalFileDAO "Reconstruir preservando UUID e datas.<br>Map de correspondências: Path para LocalFile."
+    note for LocalFileTagDAO "Especializado em vínculos.<br>Não precisa implementar CrudDAO."
+    style EntityFactory fill:#fed7aa,stroke:#c2410c,color:#374151
+    style CrudDAO fill:#ddd6fe,stroke:#6d28d9,color:#374151

@@ -1,0 +1,36 @@
+%% Fluxo de usuário — UC-14: atualização compartilhada, filtros e notificações.
+%% Fontes: doc/casos-de-uso.md:L233-L245; doc/requisitos-e-regras.md:L248-L288.
+%% [NEEDS INVESTIGATION] P-10: metadados ausentes; P-12: coordenação de tarefas.
+flowchart TD
+    button(["Clicar no único botão Refresh"])
+    tab(["Trocar de aba"])
+    filter(["Aplicar filtros"])
+    loading["Mostrar Loading e bloquear<br>novas interações conflitantes"]
+    refresh["Atualizar disponibilidade e metadados<br>de todos os LocalFile uma vez"]
+    success{"Atualização concluída?"}
+    query{"Há consulta ou filtro solicitado?"}
+    execute["Executar a consulta pretendida"]
+    presentations["Atualizar o que as duas visões mostram"]
+    done(["Encerrar Loading e continuar usando"])
+    failure[["Encerrar Loading e explicar a falha<br>11-falhas"]]
+    rule["Avisos do Observer não disparam outro Refresh.<br>Refresh não executa limpeza da inicialização.<br>Navegação de pasta não é Refresh global."]
+    button --> loading
+    tab --> loading
+    filter --> loading
+    loading --> refresh --> success
+    success -->|"Sim"| query
+    success -->|"Não / resultado parcial"| failure
+    query -->|"Sim"| execute
+    execute -->|"Consulta concluída"| presentations
+    execute -->|"Falha na consulta"| failure
+    query -->|"Não"| presentations
+    presentations --> done
+    refresh -.-> rule
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    classDef error fill:#fecaca,stroke:#b91c1c,color:#374151
+    class button,tab,filter trigger
+    class success,query decision
+    class done success
+    class failure error

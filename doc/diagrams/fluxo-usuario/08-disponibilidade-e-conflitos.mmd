@@ -1,0 +1,44 @@
+%% Fluxo de usuário — duas decisões reutilizadas pelas operações, não uma ordem fixa.
+%% Fontes: doc/casos-de-uso.md:L183-L195; doc/requisitos-e-regras.md:L138-L144, L180-L196.
+%% [NEEDS INVESTIGATION] P-02: remoção; P-08: colisões e opções por operação.
+flowchart LR
+    subgraph availability["UC-11 · Antes de usar um arquivo cadastrado"]
+        direction TB
+        use(["Abrir ou operar sobre o arquivo"])
+        found{"Arquivo disponível no caminho salvo?"}
+        unavailable{"Arquivo ausente: o que fazer?"}
+        locate["Localizar: informar o caminho correspondente"]
+        collision{"O caminho já pertence a outro cadastro?"}
+        pendingCollision["P-08: resolver colisão<br>Sem mesclagem automática definida"]
+        update["Atualizar referência;<br>preservar UUID e associações"]
+        remove["Remover do Tag-File: preservar disco<br>P-02: alcance e momento em aberto"]
+        proceed(["Continuar a operação solicitada"])
+        cancelUse(["Cancelar a operação pendente"])
+        use --> found
+        found -->|"Sim"| proceed
+        found -->|"Não"| unavailable
+        unavailable -->|"Localizar"| locate --> collision
+        collision -->|"Não; caminho correspondente válido"| update --> proceed
+        collision -->|"Sim"| pendingCollision
+        unavailable -->|"Remover referência"| remove
+        unavailable -->|"Cancelar"| cancelUse
+    end
+    subgraph conflict["OP-06 · Quando houver conflito de destino"]
+        direction TB
+        destination(["Nome ou caminho em conflito"])
+        choice{"Alternativas aplicáveis à operação"}
+        replace["Substituir: autorizar sobrescrita do destino<br>P-01: identidade e Tags na cópia"]
+        keepBoth["Manter os dois: usar caminhos distintos<br>P-08: regra de nomes ainda aberta"]
+        cancelConflict(["Cancelar a ação conflitante"])
+        returnChoice(["Retornar a escolha à operação<br>A execução ocorre no fluxo chamador"])
+        destination --> choice
+        choice -->|"Substituir"| replace --> returnChoice
+        choice -->|"Manter os dois"| keepBoth --> returnChoice
+        choice -->|"Cancelar"| cancelConflict
+    end
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class use,destination trigger
+    class found,unavailable,collision,choice,pendingCollision,remove decision
+    class proceed,returnChoice success

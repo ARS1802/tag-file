@@ -1,36 +1,68 @@
 # Interface e fluxos
 
-[Índice](README.md) · [Rastreabilidade](rastreabilidade.md) · [Decisões e pendências](decisoes-e-pendencias.md)
+[Índice](README.md) · [Observer na interface](arquitetura-e-padroes.md#arq-06) · [Casos de uso](casos-de-uso.md)
 
-[EXP-01](interface-e-fluxos.md#exp-01) a [EXP-05](interface-e-fluxos.md#exp-05) e [UI-01](interface-e-fluxos.md#ui-01) a [UI-03](interface-e-fluxos.md#ui-03) descrevem o que a interface deverá mostrar e como encaminhará ações. Os componentes e diagramas são planejamento. Os fluxos completos estão em [casos de uso](casos-de-uso.md); regras de operações, sincronização e falhas permanecem no documento principal de [requisitos](requisitos-e-regras.md).
+A UI permite navegar, classificar e operar sobre arquivos. Esta página começa pelo que o usuário vê e depois relaciona essas interações às responsabilidades das classes.
 
 <a id="exp-01"></a>
 
-## EXP-01 — Duas visões interoperáveis
+## As duas visões
 
-**Estado: confirmada.**
+| Nome da visão | O que o usuário faz | Origem dos dados |
+|---|---|---|
+| **Arquivos Local** | Navega pelas pastas reais e seleciona arquivos. | Sistema de arquivos, enriquecido com as classificações que existem no banco. |
+| **Arquivos por Etiqueta / Arquivos por Tag** | Escolhe etiquetas e encontra arquivos classificados. | Cadastros e associações persistidos. |
 
-Nomes de interface aprovados:
+Os nomes acima fazem parte do projeto, incluindo Arquivos Local. As visões ficam em abas com JTabbedPane. Também está prevista a possibilidade de exibi-las lado a lado; o arranjo concreto permanece em [P-12](decisoes-e-pendencias.md#p-12).
+
+Os nomes TagExplorerPanel e LocalFileExplorerPanel estão definidos. Screen é o papel de montar a apresentação e encaminhar eventos. Ainda é preciso decidir se cada Panel exerce esse papel ou compõe outra classe visual; essa relação está em [P-04](decisoes-e-pendencias.md#p-04). Não é necessário deduzir duas camadas de UI apenas pela existência dos dois termos.
+
+<a id="ui-02"></a>
+
+## Um arquivo com suas etiquetas
+
+Exemplo de conteúdo da visão local, sem definir um layout final:
 
 ```text
-Arquivos por Etiqueta / Arquivos por Tag
-Arquivos Local
+Pasta: Documentos
+
+prova.pdf       [Faculdade] [PDF]
+apostila.pdf
+foto.png        [Imagens]
 ```
 
-Preserve a expressão `Arquivos Local`; não a renomeie silenciosamente por preferência gramatical.
+As etiquetas aparecem junto do arquivo. Se não houver etiquetas, a região fica em branco. Etiqueta Ausente aparece normalmente quando estiver realmente associada ao cadastro.
 
-- A visão por Tag mostra arquivos classificados nas Tags selecionadas, sem colocar a hierarquia física como foco principal.
-- A visão local mostra o sistema de arquivos real e pode exibir arquivos desconhecidos pelo banco. Se houver registro, suas etiquetas aparecem.
+Para associar por Drag and Drop, o usuário **solta um arquivo sobre a representação de uma Tag**. O arquivo pode vir do explorador do sistema operacional ou do explorador interno do Tag-File. O componente que receberá o Drop ainda será escolhido; arrastar uma Tag sobre um arquivo não é uma interação definida.
 
-Os exploradores ficam em abas; `JTabbedPane` foi discutido e adotado como organização das abas. O solicitante também pediu poder exibi-los lado a lado. Essa intenção não foi retirada, mas o mecanismo visual não foi especificado.
+JFileChooser e FileNameExtensionFilter são os componentes previstos para seleção por diálogo. O filtro visual ajuda a selecionar, mas a regra de compatibilidade também precisa funcionar quando a entrada vier por Drop.
 
-Foram aprovados os nomes de classes `TagExplorerPanel` e `LocalFileExplorerPanel`. A conversa posterior usou Screens sem formalizar completamente se os Panels seriam as telas ou seus componentes. Preserve [P-04](decisoes-e-pendencias.md#p-04).
+<a id="exp-04"></a>
+
+## Encontrar arquivos com AND e OR
+
+Considere estes cadastros:
+
+```text
+prova.pdf      → Faculdade, Importante
+trabalho.docx  → Faculdade
+conta.pdf      → Importante
+```
+
+| Seleção | Modo | Resultado |
+|---|---|---|
+| Faculdade e Importante | AND: todas as Tags | prova.pdf |
+| Faculdade e Importante | OR: pelo menos uma Tag | prova.pdf, trabalho.docx, conta.pdf |
+
+O mesmo cadastro aparece uma vez no resultado, mesmo correspondendo a várias Tags. NOT está fora do escopo. O resultado quando nenhuma Tag está selecionada permanece em [P-13](decisoes-e-pendencias.md#p-13).
+
+Essa pesquisa retorna arquivos. Já uma consulta de TagDAO retorna Tags, conforme seu contrato CrudDAO<Tag, TagFilter>. O encaixe final dos critérios e do método de pesquisa de arquivos por Tags está em [P-05](decisoes-e-pendencias.md#p-05).
 
 <a id="exp-02"></a>
 
-## EXP-02 — Filtros por tipo de informação
+## O papel dos filtros
 
-**Estado: confirmada.**
+Um filtro representa os critérios que restringem uma consulta ou listagem. Ele não é a seleção de arquivos sobre a qual o usuário confirmou uma operação.
 
 ```text
 Filter (classe abstrata)
@@ -39,150 +71,86 @@ Filter (classe abstrata)
 └── TagFilter
 ```
 
-`NativeFileFilter` atua sobre os arquivos físicos obtidos pelo serviço nativo. `LocalFileFilter` atua sobre registros persistidos. `TagFilter` precisa manter coerência com as consultas que retornam Tags.
+| Tipo | Informação filtrada |
+|---|---|
+| NativeFileFilter | Arquivos físicos obtidos pelo serviço nativo. |
+| LocalFileFilter | Cadastros persistidos de arquivos. |
+| TagFilter | Etiquetas, mantendo o retorno de Tags nas consultas correspondentes. |
 
-Extensões, tamanho e datas foram aprovados como critérios relevantes de consulta. Campos exatos, tipos de intervalos e todos os métodos não estão homologados.
-
-Filtros de somente etiquetados/sem etiquetas, busca textual por nome e seleção explícita de disponibilidade surgiram como sugestões. Não os apresente como funcionalidades obrigatórias confirmadas.
+Extensões, tamanho e datas estão previstos como critérios relevantes. Campos exatos, intervalos e métodos ainda não estão todos definidos. Busca textual por nome, somente etiquetados/sem etiquetas e seleção de disponibilidade permanecem sugestões, não requisitos adicionais.
 
 <a id="exp-03"></a>
 
-## EXP-03 — Correspondência em lote com Map
-
-**Estado: confirmada.**
-
-Fluxo da visão local:
+## Como a visão local reúne disco e banco
 
 ```text
 Listar arquivos físicos da pasta
 → aplicar NativeFileFilter
-→ consultar em lote correspondências persistidas
+→ consultar correspondências no banco em lote
 → obter Map<Path, LocalFile>
-→ mostrar todos os NativeFile resultantes, com Tags quando houver LocalFile
+→ mostrar os arquivos resultantes com suas Tags, quando houver cadastro
 ```
 
-A consulta de correspondências enriquece a apresentação; não elimina automaticamente os arquivos não registrados.
+Map é uma estrutura que relaciona uma chave a um valor. Aqui, a chave é o caminho e o valor é o LocalFile correspondente. A apresentação procura nesse mapa o cadastro de cada arquivo listado. Se não houver correspondência, o arquivo continua aparecendo.
 
-```text
-prova.pdf       [Faculdade] [PDF]
-apostila.pdf
-foto.png        [Imagens]
-```
-
-Evitar uma consulta SQL separada obrigatória por arquivo exibido foi parte da decisão. A assinatura exata do método em lote e a normalização das chaves do Map precisam ser coerentes com os caminhos, mas não foram totalmente definidas.
-
-<a id="exp-04"></a>
-
-## EXP-04 — AND e OR
-
-**Estado: confirmada.**
-
-O usuário escolhe entre:
-
-```text
-AND → o arquivo possui todas as Tags selecionadas
-OR  → o arquivo possui ao menos uma das Tags selecionadas
-```
-
-Não incluir NOT.
-
-O resultado dessa consulta são arquivos. O mesmo registro não deve virar múltiplos `LocalFile` porque correspondeu a várias Tags; a apresentação sem duplicação de identidade decorre do modelo.
-
-Há um encaixe de API pendente: exemplos antigos colocaram critérios de arquivos por Tags em `TagFilter`, mas `TagDAO` implementa `CrudDAO<Tag, TagFilter>`. Não faça `TagDAO.find(...)` retornar arquivos contrariando o tipo aprovado. Registre [P-05](decisoes-e-pendencias.md#p-05) e diferencie retorno de Tags de retorno de `LocalFile`.
-
-O caso de nenhuma Tag selecionada não foi definido.
+A consulta em lote evita exigir uma consulta SQL separada para cada arquivo. Sua assinatura e a normalização das chaves Path ainda precisam ser combinadas com a política de caminhos, em P-05/P-08. Listar a pasta e consultar correspondências não cria cadastros automaticamente nem equivale ao Refresh global.
 
 <a id="exp-05"></a>
 
-## EXP-05 — Ordenação e desempate
+## Ordenação
 
-**Estado: parcialmente definido / futuro.**
-
-Tamanho e datas devem permitir filtragem. O tamanho como critério de desempate foi mencionado como possibilidade futura.
-
-Não foram escolhidos ordenação padrão, precedência de critérios, direção, implementação de `Comparable` ou `Comparator`. Não complete esses pontos arbitrariamente.
+Tamanho e datas permitem filtragem. A ordenação padrão, a direção, a precedência de critérios e o uso de Comparable/Comparator ainda não foram escolhidos. Tamanho como desempate permanece uma possibilidade futura. Veja [P-13](decisoes-e-pendencias.md#p-13).
 
 <a id="ui-01"></a>
 
-## UI-01 — Screens conectam componentes aos Controllers
-
-**Estado: confirmada na divisão de responsabilidades.**
-
-```text
-Componente Swing
-→ evento ligado pela Screen
-→ método do Controller
-→ coordenação da operação
-```
-
-A Screen registra listeners dos componentes; o Controller não deve registrar diretamente listeners conhecendo botões, campos e painéis internos. A Screen também não implementa SQL ou manipulação física.
-
-`TagBadge`, `TagButton`, `FileItemPanel` e classes de diálogos específicos foram exemplos de composição visual. Não são uma lista de novas classes obrigatórias.
-
-<a id="ui-02"></a>
-
-## UI-02 — Etiquetas visíveis e Drag and Drop
-
-**Estado: confirmada.**
-
-As etiquetas de um arquivo devem aparecer junto dele. Quando não houver Tags, deixar o espaço em branco, sem exigir marcador artificial de “sem etiquetas”. Isso não elimina a apresentação normal de `Etiqueta Ausente` quando ela estiver realmente associada.
-
-O Drop acontece sobre a representação da Tag. As origens aprovadas são o explorador de arquivos do sistema e o explorador interno.
-
-Arrastar uma Tag sobre um arquivo apareceu em uma explicação, mas não foi aprovado como nova interação. Não invente esse fluxo.
-
-O componente visual exato do alvo do Drop ficou para a UI.
-
-<a id="ui-03"></a>
-
-## UI-03 — Loading durante consultas/operações
-
-**Estado: confirmada na interação.**
-
-Apresentar um pop-up “Loading...” durante a operação, bloqueando novas interações conflitantes até o término. O comportamento atende aos dois exploradores e não exige pool ou botão por aba.
-
-A implementação modal com `SwingWorker` foi explicada como alternativa para manter a interface responsiva. O uso de `SwingWorker` em si não foi confirmado como classe obrigatória. A documentação pode explicá-lo como possibilidade, sem criar uma dependência nova ou alegar que já existe.
-
-O bloqueio de cliques não resolve sozinho tarefas automáticas já iniciadas. O mecanismo para impedir reentrância e operações de banco simultâneas ainda não foi definido; registre esse limite de planejamento em [P-12](decisoes-e-pendencias.md#p-12), sem depender de código para reconhecê-lo.
-
-
-
-<a id="fluxo-refresh"></a>
-
-## Refresh e integração das apresentações
-
-A regra principal é [SYN-01](requisitos-e-regras.md#syn-01) a [SYN-03](requisitos-e-regras.md#syn-03). Um único botão atende aos exploradores; troca de aba e aplicação de filtros também atualizam todos os registros. O [percurso de Refresh](arquitetura-e-padroes.md#percurso-refresh) explica a colaboração completa e as falhas. A notificação do Observer atualiza a apresentação, sem uma nova solicitação global por Screen.
-
-A Screen deverá mostrar as etiquetas ao lado do arquivo. Na visão local, a consulta em lote acrescenta as informações do LocalFile sem ocultar NativeFile sem correspondência. Ler uma pasta é parte da navegação normal, sem cadastro automático ou sincronização global a cada pasta.
-
-## Diálogos que a equipe deverá diferenciar
-
-| Situação | Informação e alternativas aprovadas | Regra / limite |
-|---|---|---|
-| Nome repetido de Tag | Pedir confirmação e permitir outra identidade. | [TAG-01](requisitos-e-regras.md#tag-01); comparação/validação em [P-09](decisoes-e-pendencias.md#p-09). |
-| Associação incompatível | Informar extensão e Tag; criar Tag, adicionar extensão à atual ou cancelar. | [EXT-02](requisitos-e-regras.md#ext-02); também vale no Drop. |
-| Restrição alterada | Listar os arquivos que perderiam compatibilidade e pedir confirmação. | [EXT-03](requisitos-e-regras.md#ext-03); considerar o conjunto final. |
-| Novo LocalFile | Oferecer predefinida compatível e supressão por sessão. | [TAG-04](requisitos-e-regras.md#tag-04); [P-03](decisoes-e-pendencias.md#p-03) mantém o efeito futuro aberto. |
-| Arquivo indisponível | Localizar, remover do Tag-File ou cancelar. | [OP-02](requisitos-e-regras.md#op-02); [P-02](decisoes-e-pendencias.md#p-02)/[P-08](decisoes-e-pendencias.md#p-08) para remoção e colisão. |
-| Cópia | Perguntar sobre herdar Tags. | [OP-04](requisitos-e-regras.md#op-04); identidade em [P-01](decisoes-e-pendencias.md#p-01). |
-| Renomear com incompatibilidade | Retirar Tags incompatíveis, permitir nova extensão nelas ou cancelar. | [OP-05](requisitos-e-regras.md#op-05); não é conversão de conteúdo. |
-| Conflito de nome/caminho | Substituir, manter os dois ou cancelar, conforme aplicável. | [OP-06](requisitos-e-regras.md#op-06); matriz por operação/nomenclatura em [P-08](decisoes-e-pendencias.md#p-08). |
-| Exclusão | Distinguir somente Tag, todas as etiquetas dos arquivos atingidos e exclusão física permanente. Listar outras Tags afetadas antes de remover registros/arquivos. | [DEL-01](requisitos-e-regras.md#del-01) a [DEL-04](requisitos-e-regras.md#del-04); modalidade 2 ainda em [P-02](decisoes-e-pendencias.md#p-02). |
-| Predefinidas | Reforçar confirmação para as comuns; proteger Etiqueta Ausente inclusive vazia. | [TAG-02](requisitos-e-regras.md#tag-02)/[TAG-03](requisitos-e-regras.md#tag-03); identificação técnica em [P-07](decisoes-e-pendencias.md#p-07). |
-| Falha parcial | Mensagem compreensível, concluído, falha e detalhes expansíveis. | [ERR-01](requisitos-e-regras.md#err-01); encerrar Loading sem declarar sucesso integral. |
-| Instalação necessária | Solicitar autorização; cancelamento não representa sucesso. | [AMB-01](instalacao-e-execucao.md#amb-01); UAC no Windows e mecanismo Linux não fechado. |
-
-A tabela resume regras existentes, sem acrescentar layouts, botões ou tratamento de lotes. Seleção múltipla geral, prevenção de reentrância, clipboard após colagem e arranjo lado a lado continuam em [P-12](decisoes-e-pendencias.md#p-12). Consulta sem Tags, estados vazios e ordenação continuam em [P-13](decisoes-e-pendencias.md#p-13).
-
-## Filtro, seleção e operação na interface
+## Da interação ao Controller
 
 ```mermaid
 flowchart LR
-    F["Critérios de filtro"] --> Q["Consulta ou listagem"]
-    Q --> R["Resultados apresentados"]
+    F["Filtros"] --> R["Resultados apresentados"]
     R --> S["Seleção do usuário"]
-    S --> C["Controller recebe ação confirmada"]
-    C --> M["Chamada direta ao Manager ou Service pertinente"]
+    S --> T["Screen recebe a ação"]
+    T --> C["Controller coordena os colaboradores"]
 ```
 
-**Modelo de colaboração aprovado, sem API adicional.** A ação usa a seleção confirmada, sem repetir o filtro para afetar outros elementos. Telas não implementam SQL ou movimentação; Controllers não registram listeners dos botões diretamente. A formalização das Screens como Observer e suas relações com Panels continua em [P-04](decisoes-e-pendencias.md#p-04)/[P-05](decisoes-e-pendencias.md#p-05).
+A Screen registra os listeners dos seus componentes e encaminha a solicitação ao Controller. O Controller recebe os dados da ação, sem precisar registrar listeners diretamente nos botões da Screen. SQL fica nos DAOs; manipulação física fica no serviço nativo.
+
+A operação usa a seleção confirmada. Repetir um filtro não pode trocar os arquivos afetados depois dessa confirmação. Seleção múltipla está definida no fluxo de associação inicial; seu comportamento geral em outras operações continua em [P-12](decisoes-e-pendencias.md#p-12).
+
+TagBadge, TagButton, FileItemPanel e classes específicas de diálogo são exemplos possíveis de componentes; não constituem uma lista obrigatória de classes. O [exemplo de Observer](arquitetura-e-padroes.md#arq-06) mostra como ligar a ação enviada pela Screen ao aviso recebido depois da alteração.
+
+<a id="ui-03"></a>
+
+## Durante uma operação: Loading e erros
+
+Apresentar um pop-up Loading durante consultas/operações, bloqueando novas interações conflitantes até o término. Ao concluir ou falhar, encerrar esse estado e apresentar o resultado correspondente.
+
+SwingWorker é uma alternativa para manter a UI responsiva; a seção de Observer explica EDT e trabalho em segundo plano. A escolha de implementação e a prevenção de tarefas simultâneas/reentrância continuam em P-12. Bloquear cliques não resolve sozinho operações automáticas que já começaram.
+
+Em falha parcial, a mensagem precisa separar o que foi concluído do que falhou, com detalhes técnicos expansíveis. Por exemplo: o arquivo foi movido, mas o novo caminho não foi salvo no banco. As regras estão em [ERR-01](requisitos-e-regras.md#err-01).
+
+<a id="fluxo-refresh"></a>
+
+## Refresh compartilhado
+
+Há um único botão Refresh para os exploradores. Trocar de aba e aplicar filtros também atualizam todos os LocalFile. Navegar por pastas realiza as leituras necessárias à listagem, sem disparar uma sincronização global em cada pasta.
+
+Depois da atualização, o Controller publica o aviso pertinente. Os observadores atualizam a apresentação; não chamam outro Refresh global. A limpeza de cadastros sem classificação só ocorre na inicialização. Veja [gatilhos e alcance](requisitos-e-regras.md#syn-01).
+
+## Diálogos e consequências
+
+| Situação | Informação e alternativas | Referência |
+|---|---|---|
+| Nome repetido de Tag | Pedir confirmação; se confirmado, criar outra Tag com outro UUID. | [TAG-01](requisitos-e-regras.md#tag-01) |
+| Associação incompatível | Informar Tag e extensão; criar Tag, ampliar a atual ou cancelar. | [EXT-02](requisitos-e-regras.md#ext-02) |
+| Edição de restrições | Listar arquivos que perderiam compatibilidade e pedir confirmação. | [EXT-03](requisitos-e-regras.md#ext-03) |
+| Novo LocalFile | Oferecer predefinida compatível; opção de silenciar na sessão. O efeito automático futuro está aberto. | [TAG-04](requisitos-e-regras.md#tag-04), P-03 |
+| Arquivo indisponível | Localizar, remover do Tag-File ou cancelar. | [OP-02](requisitos-e-regras.md#op-02), P-02/P-08 |
+| Cópia | Perguntar se deve herdar Tags. | [OP-04](requisitos-e-regras.md#op-04), P-01 |
+| Renomear com nova extensão incompatível | Retirar Tags incompatíveis, permitir a nova extensão nelas ou cancelar. | [OP-05](requisitos-e-regras.md#op-05) |
+| Conflito de nome/caminho | Substituir, manter os dois ou cancelar, conforme a operação. | [OP-06](requisitos-e-regras.md#op-06), P-08 |
+| Exclusão | Diferenciar exclusão da Tag, retirada de classificações dos arquivos atingidos e exclusão física permanente; listar outras Tags afetadas na confirmação adicional. | [DEL-01 a DEL-04](requisitos-e-regras.md#del-01), P-02 |
+| Exclusão de predefinida | Confirmação reforçada para as comuns; Etiqueta Ausente permanece protegida, inclusive vazia. | [TAG-02](requisitos-e-regras.md#tag-02) |
+| Instalação necessária | Solicitar autorização; recusa e cancelamento não são sucesso. | [AMB-01](instalacao-e-execucao.md#amb-01) |
+
+Os textos de botões podem ser trabalhados pela equipe, preservando os efeitos definidos. Estados vazios, ordenação e consulta sem Tag selecionada continuam em P-13; o layout lado a lado e detalhes de lotes continuam em P-12.

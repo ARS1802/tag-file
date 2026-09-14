@@ -1,0 +1,39 @@
+%% Sequência entre classes — clipboard compartilhado e duas etapas sujeitas a falha.
+%% Fontes: doc/arquitetura-e-padroes.md:L87-L97, L184-L190; doc/casos-de-uso.md:L147-L161.
+%% [NEEDS INVESTIGATION] P-12: clipboard depois da colagem; P-08: conflitos.
+%% Cenário: mover um cadastro existente, após disponibilidade e confirmações.
+sequenceDiagram
+    autonumber
+    participant origin as TagExplorerController
+    participant clipboard as ClipboardService
+    participant target as LocalFileExplorerController
+    participant manager as LocalFileManager
+    participant native as NativeFileService
+    participant dao as LocalFileDAO
+    participant events as ExplorerEventService
+    participant observers as Objetos ExplorerListener
+
+    origin->>clipboard: Guardar CUT para prova.pdf
+    Note over origin,clipboard: Recortar não move o arquivo.<br>Não há chamada direta entre Controllers.
+    target->>clipboard: Consultar intenção ao receber Colar + pasta
+    clipboard-->>target: CUT e referência ao arquivo selecionado
+    Note over target,manager: Conferir disponibilidade e resolver conflitos antes de executar.<br>O desenho abaixo acompanha um arquivo já cadastrado.
+    target->>manager: Coordenar movimento confirmado
+    manager->>native: Mover arquivo para a pasta de destino
+    alt Movimento físico concluído
+        native-->>manager: Novo caminho
+        manager->>dao: Atualizar caminho preservando UUID e Tags
+        alt Persistência concluída
+            dao-->>manager: Caminho atualizado
+            manager-->>target: Sucesso completo
+        else Persistência falhou
+            dao-->>manager: Erro de gravação
+            manager-->>target: Parcial: disco mudou, SQL não foi atualizado
+        end
+    else Movimento físico falhou
+        native-->>manager: Erro e informações disponíveis
+        manager-->>target: Falha física, informar resultado conhecido
+    end
+    target->>events: Publicar somente as alterações pertinentes ao resultado
+    events->>observers: Avisar apresentações interessadas
+    Note over target,observers: A Screen encerra Loading e mostra o resultado real.<br>Sem rollback garantido entre disco e SQL.<br>P-12: limpeza/reutilização do clipboard ainda aberta.

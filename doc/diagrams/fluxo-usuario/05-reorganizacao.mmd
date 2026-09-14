@@ -1,0 +1,38 @@
+%% Fluxo de usuário — UC-06/UC-07: editar Tags e retirar associações.
+%% Fontes: doc/casos-de-uso.md:L97-L125; doc/requisitos-e-regras.md:L71-L124.
+%% [NEEDS INVESTIGATION] P-02: remoção explícita; P-07/P-09: validações especiais.
+flowchart TD
+    action{"Como reorganizar?"}
+    metadata["Editar nome ou cor;<br>validar dados e confirmar repetição de nome"]
+    restrictions["Editar o conjunto final de extensões<br>Conjunto vazio elimina a restrição"]
+    incompatible{"Algum associado ficará incompatível?"}
+    list["Listar arquivos e associações afetadas"]
+    confirm{"Confirmar a alteração?"}
+    apply["Aplicar a mudança aprovada e retirar<br>somente as associações incompatíveis"]
+    oneLink["Retirar somente a associação escolhida"]
+    remaining{"Restam Tags normais no arquivo afetado?"}
+    keep["Manter o cadastro com as Tags restantes"]
+    sentinel["Manter o cadastro em Etiqueta Ausente<br>para continuar organizando nesta sessão"]
+    save["Salvar os dados confirmados da Tag"]
+    result(["Atualizar apresentação;<br>preservar os arquivos físicos"])
+    cancel(["Cancelar alteração ainda não confirmada"])
+    nextSession["Próxima inicialização:<br>limpar cadastros somente na sentinela<br>ou sem associações"]
+    action -->|"Nome / cor"| metadata
+    metadata -->|"Dados confirmados"| save
+    metadata -->|"Cancelar"| cancel
+    action -->|"Extensões"| restrictions --> incompatible
+    incompatible -->|"Não"| save
+    incompatible -->|"Sim"| list --> confirm
+    confirm -->|"Não"| cancel
+    confirm -->|"Sim"| apply --> remaining
+    action -->|"Desassociar arquivo"| oneLink --> remaining
+    remaining -->|"Sim"| keep --> result
+    remaining -->|"Não"| sentinel --> result
+    save --> result
+    sentinel -.->|"Somente ao abrir nova sessão"| nextSession
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    class action,incompatible,confirm,remaining decision
+    class result success
+    class sentinel trigger

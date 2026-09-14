@@ -1,0 +1,43 @@
+%% Fluxo de usuário — UC-01: preparar ambiente e abrir uma sessão.
+%% Fontes: doc/casos-de-uso.md:L13-L25; doc/instalacao-e-execucao.md:L111-L145.
+%% [NEEDS INVESTIGATION] P-11: recuperação de preparação incompleta e encerramento.
+flowchart TD
+    start(["Abrir o aplicativo"])
+    check["Verificar os componentes do banco local"]
+    missing{"Falta algum componente?"}
+    consent{"Autorizar a instalação?"}
+    install["Instalar componentes necessários"]
+    prepared{"Dados já preparados?"}
+    newData["Preparar dados novos"]
+    reuse["Reutilizar os dados existentes"]
+    connect["Iniciar ou reconhecer a instância;<br>preparar estrutura e conectar"]
+    cleanup["Limpar cadastros somente em Etiqueta Ausente<br>e cadastros sem qualquer associação"]
+    refresh["Atualizar os cadastros remanescentes"]
+    ready(["Disponibilizar os dois exploradores"])
+    shutdown["Encerrar conexão e instância administrada<br>P-11: ordem detalhada ainda aberta"]
+    closed(["Aplicação encerrada; dados preservados"])
+    declined(["Informar recusa ou cancelamento"])
+    failure[["Se uma etapa falhar: apresentar resultado real<br>11-falhas; recuperação em P-11"]]
+    preserve["A limpeza preserva arquivos físicos e a Tag protegida.<br>Indisponibilidade sozinha não exclui cadastro."]
+    start --> check --> missing
+    missing -->|"Sim"| consent
+    consent -->|"Sim"| install
+    consent -->|"Não / cancelar"| declined
+    install -->|"Concluída"| prepared
+    missing -->|"Não"| prepared
+    prepared -->|"Não"| newData
+    prepared -->|"Sim"| reuse
+    newData --> connect
+    reuse --> connect
+    connect -->|"Concluído"| cleanup --> refresh --> ready
+    connect -.->|"Falha; regra vale para cada etapa"| failure
+    cleanup -.-> preserve
+    ready -.->|"Quando o usuário encerrar o aplicativo"| shutdown --> closed
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    classDef error fill:#fecaca,stroke:#b91c1c,color:#374151
+    class start trigger
+    class missing,consent,prepared decision
+    class ready,closed success
+    class failure error

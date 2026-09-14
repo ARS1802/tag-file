@@ -1,0 +1,43 @@
+%% Fluxo de usuário — UC-02/UC-03: dois caminhos para encontrar arquivos.
+%% Fontes: doc/casos-de-uso.md:L29-L57; doc/interface-e-fluxos.md:L42-L102.
+%% [NEEDS INVESTIGATION] P-13: busca sem Tags e ordenação; P-05: API de consulta.
+flowchart TD
+    entry(["Escolher uma visão"])
+    view{"Qual origem da busca?"}
+    entry --> view
+    subgraph localView["Arquivos Local · UC-02"]
+        directory["Escolher ou navegar até uma pasta"]
+        native["Ver arquivos físicos e suas Tags,<br>inclusive arquivos ainda não cadastrados"]
+        criteria{"Aplicar critérios físicos?"}
+        localRefresh[["Atualizar cadastros antes dos filtros<br>10-refresh"]]
+        filtered["Restringir por extensão, tamanho ou datas"]
+        directory --> native --> criteria
+        criteria -->|"Sim"| localRefresh --> filtered
+    end
+    subgraph tagView["Arquivos por Tag · UC-03"]
+        selected["Selecionar etiquetas e critérios"]
+        hasTags{"Há Tags selecionadas?"}
+        globalRefresh[["Atualizar todos os cadastros<br>10-refresh"]]
+        mode{"Combinação escolhida"}
+        allTags["AND: exigir todas as Tags"]
+        anyTag["OR: exigir pelo menos uma Tag"]
+        empty["P-13: resultado da busca vazia<br>ainda não definido"]
+        selected --> hasTags
+        hasTags -->|"Sim"| globalRefresh --> mode
+        hasTags -->|"Não"| empty
+        mode -->|"AND"| allTags
+        mode -->|"OR"| anyTag
+    end
+    view -->|"Pastas reais"| directory
+    view -->|"Classificações"| selected
+    results(["Consultar resultados e selecionar arquivos<br>Cada cadastro aparece uma única vez"])
+    criteria -->|"Não"| results
+    filtered --> results
+    allTags --> results
+    anyTag --> results
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class entry trigger
+    class view,criteria,hasTags,mode,empty decision
+    class results success

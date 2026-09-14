@@ -1,0 +1,45 @@
+%% Fluxo de usuário — UC-05: compatibilidade, associação e sugestão adicional.
+%% Fontes: doc/casos-de-uso.md:L79-L93; doc/requisitos-e-regras.md:L57-L103.
+%% [NEEDS INVESTIGATION] P-03: supressão de sugestões e múltiplas predefinidas.
+flowchart TD
+    start(["Selecionar arquivo e Tag<br>ou soltar arquivo sobre uma Tag"])
+    compatible{"A Tag aceita a extensão?"}
+    alternative{"Como tratar a incompatibilidade?"}
+    create[["Criar nova etiqueta<br>03-criacao-tag"]]
+    extend["Autorizar a inclusão da extensão<br>na etiqueta atual"]
+    associate["Concluir a associação confirmada;<br>reutilizar cadastro ou criar o necessário"]
+    sentinel["Se aplicada uma Tag normal,<br>retirar o vínculo com Etiqueta Ausente"]
+    created{"Foi criado um novo cadastro?"}
+    suggestion{"Cabe apresentar sugestão<br>de predefinida compatível?"}
+    answer{"Aceitar a sugestão atual?"}
+    accept["Associar também a predefinida escolhida"]
+    decline["Não acrescentar a associação sugerida"]
+    silenceChoice{"Silenciar próximas perguntas<br>nesta sessão?"}
+    silence["Não perguntar novamente nesta sessão<br>Efeito futuro ainda em P-03"]
+    result(["Mostrar as classificações nas visões"])
+    cancel(["Cancelar a associação pendente"])
+    pending["P-03: critério entre várias predefinidas<br>e efeito de silenciar ainda abertos"]
+    start --> compatible
+    compatible -->|"Sim; inclusive Tag sem restrição"| associate
+    compatible -->|"Não"| alternative
+    alternative -->|"Criar Tag"| create
+    create -->|"Tag criada e associação confirmada"| associate
+    create -->|"Cancelar"| cancel
+    alternative -->|"Ampliar a Tag atual"| extend --> associate
+    alternative -->|"Cancelar"| cancel
+    associate --> sentinel --> created
+    created -->|"Não"| result
+    created -->|"Sim"| suggestion
+    suggestion -->|"Sim"| answer
+    suggestion -->|"Sem predefinida compatível"| result
+    suggestion -.->|"Supressão ativa ou várias compatíveis: P-03"| pending
+    answer -->|"Sim"| accept --> silenceChoice
+    answer -->|"Não"| decline --> silenceChoice
+    silenceChoice -->|"Sim"| silence --> result
+    silenceChoice -->|"Não"| result
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class start trigger
+    class compatible,alternative,created,suggestion,answer,silenceChoice,pending,silence decision
+    class result success

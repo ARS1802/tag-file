@@ -1,0 +1,40 @@
+%% Fluxo de usuário — UC-08/UC-09 e OP-03: copiar, recortar, mover e colar.
+%% Fontes: doc/casos-de-uso.md:L129-L161; doc/requisitos-e-regras.md:L148-L204.
+%% [NEEDS INVESTIGATION] P-01: identidade da cópia; P-12: clipboard após colagem.
+%% A preparação agrupa decisões, sem fixar a ordem ainda aberta das confirmações.
+flowchart TD
+    start(["Selecionar arquivo em um explorador"])
+    action{"Qual operação?"}
+    copy["Copiar: guardar intenção COPY"]
+    cut["Recortar: guardar intenção CUT<br>O arquivo continua na origem"]
+    paste["Escolher pasta de destino e Colar<br>O clipboard é compartilhado entre visões"]
+    directMove["Mover: escolher pasta de destino"]
+    preparation[["Verificar disponibilidade e tratar conflitos<br>08-disponibilidade-e-conflitos"]]
+    execution{"Intenção confirmada"}
+    copyChoice["Perguntar se a cópia deve herdar Tags;<br>aplicar escolhas de conflito confirmadas"]
+    copied["Se a cópia concluir: outro arquivo físico;<br>a origem permanece preservada"]
+    copyPending["P-01: contrato SQL ainda aberto<br>UUID / Tags na substituição e cópia sem Tags"]
+    moved["Mover o arquivo físico;<br>se cadastrado, atualizar o caminho<br>preservando UUID e Tags"]
+    result(["Apresentar o resultado real<br>Retornar aos exploradores"])
+    canceled(["Cancelar a ação pendente"])
+    after["P-12: estado do clipboard após Colar<br>e repetição de CUT ainda abertos"]
+    start --> action
+    action -->|"Copiar"| copy --> paste
+    action -->|"Recortar"| cut --> paste
+    action -->|"Mover diretamente"| directMove
+    paste --> preparation
+    directMove --> preparation
+    preparation -->|"Prosseguir conforme escolhas"| execution
+    preparation -->|"Cancelar"| canceled
+    execution -->|"COPY"| copyChoice
+    copyChoice -->|"Efeito físico esperado da cópia autorizada"| copied --> result
+    copyChoice -.->|"Definir antes de implementar o fluxo completo"| copyPending
+    copyChoice -->|"Cancelar"| canceled
+    execution -->|"CUT / mover"| moved --> result
+    result -.-> after
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class start trigger
+    class action,execution,copyPending,after decision
+    class result success
