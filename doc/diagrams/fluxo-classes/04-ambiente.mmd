@@ -1,0 +1,32 @@
+%% Sequência entre classes — preparar servidor, compartilhar conexão e iniciar domínio.
+%% Fontes: doc/instalacao-e-execucao.md:L9-L34, L111-L168; doc/arquitetura-e-padroes.md:L142-L152.
+%% [NEEDS INVESTIGATION] P-11: contratos e ordem detalhada do encerramento.
+%% Inicialização da aplicação é um papel; não pressupõe uma nova classe obrigatória.
+sequenceDiagram
+    autonumber
+    participant startup as Inicialização da aplicação
+    participant database as DatabaseManager
+    participant scripts as Scripts via ProcessBuilder
+    participant connection as DatabaseConnection
+    participant daos as DAOs
+    participant manager as LocalFileManager
+    participant views as Exploradores
+
+    startup->>database: Preparar a instância local do Tag-File
+    database->>scripts: Verificar componentes, preparar/reutilizar e iniciar instância
+    Note over database,scripts: Instalação depende de autorização do usuário.<br>PowerShell no Windows e Bash no Ubuntu/Linux Mint.<br>Não alterar outras instâncias MySQL.
+    scripts-->>database: Resultado das etapas e identificação disponível
+    Note over database,connection: Preparar conta, banco e schema conforme necessário.<br>P-11: comandos e recuperação parcial ainda abertos.
+    database-->>startup: Preparação concluída ou falha real
+    alt Ambiente pronto
+        startup->>connection: Disponibilizar conexão JDBC compartilhada
+        Note over connection,daos: DAOs guardam referência à mesma DatabaseConnection.<br>Um DAO não fecha essa conexão a cada chamada.
+        startup->>manager: Executar limpeza exclusiva da inicialização
+        manager->>daos: Remover cadastros somente na sentinela e sem vínculos
+        Note over manager,daos: Preservar arquivos físicos e a Tag protegida
+        startup->>manager: Atualizar LocalFile remanescentes
+        startup->>views: Disponibilizar as duas visões
+    else Preparação falhou ou instalação recusada
+        Note over startup,database: Informar resultado sem reinicializar dados para corrigir conexão.<br>P-11 mantém o procedimento de recuperação aberto.
+    end
+    Note over database,connection: Ao encerrar: DatabaseManager coordena a parada da sua instância.<br>DatabaseConnection fecha a conexão. Ordem detalhada em P-11.<br>Reconectar durante a sessão não repete a limpeza de domínio.

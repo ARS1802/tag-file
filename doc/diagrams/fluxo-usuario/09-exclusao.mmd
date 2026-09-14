@@ -1,0 +1,41 @@
+%% Fluxo de usuário — UC-12/UC-13: três exclusões e busca de Tags vazias.
+%% Fontes: doc/casos-de-uso.md:L199-L229; doc/requisitos-e-regras.md:L208-L244.
+%% [NEEDS INVESTIGATION] P-02: modalidade 2; ordem física/SQL e lotes em aberto.
+flowchart TD
+    direct(["Selecionar uma Tag para excluir"])
+    empty(["Localizar etiquetas vazias"])
+    search["Listar Tags sem qualquer associação<br>Zero disponíveis não significa vazia"]
+    select["Escolher a Tag pelo UUID"]
+    mode{"Qual consequência deseja?"}
+    onlyTag["1 · Excluir somente a etiqueta"]
+    allLinks["2 · Retirar todas as classificações<br>dos arquivos da Tag selecionada"]
+    physical["3 · Apagar permanentemente<br>os arquivos da Tag"]
+    protection["Preservar Etiqueta Ausente;<br>reforçar confirmação de predefinidas comuns"]
+    confirm{"Confirmar efeitos e outras Tags afetadas?"}
+    apply{"Modalidade confirmada"}
+    resultOne["Excluir Tag e somente seus vínculos.<br>Preservar disco e cadastros;<br>aplicar sentinela se perderem a última normal."]
+    resultTwo["Preservar arquivos físicos e outras Tags.<br>P-02: cadastros removidos agora ou depois?<br>Tag selecionada excluída ou mantida vazia?"]
+    resultThree["Excluir arquivos físicos, seus cadastros,<br>todos os vínculos desses cadastros e a Tag.<br>Outras Tags continuam existindo."]
+    cancel(["Cancelar a ação ainda não confirmada"])
+    protected(["Impedir a exclusão da Tag protegida<br>Seu UUID técnico ainda depende de P-07"])
+    direct --> select
+    empty --> search --> select
+    select --> mode
+    mode -->|"Modalidade 1"| onlyTag --> protection
+    mode -->|"Modalidade 2"| allLinks --> protection
+    mode -->|"Modalidade 3"| physical --> protection
+    protection -->|"A ação exige excluir Etiqueta Ausente"| protected
+    protection -->|"Ação permitida; observar P-02"| confirm
+    confirm -->|"Não"| cancel
+    confirm -->|"Sim"| apply
+    apply -->|"1"| resultOne
+    apply -->|"2: efeitos finais ainda abertos"| resultTwo
+    apply -->|"3"| resultThree
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef error fill:#fecaca,stroke:#b91c1c,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class direct,empty trigger
+    class mode,confirm,apply,resultTwo decision
+    class physical,resultThree,protected error
+    class resultOne success

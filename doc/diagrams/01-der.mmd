@@ -1,0 +1,31 @@
+%% DER conceitual — entidades, cardinalidades e informações relacionadas.
+%% Relação central: muitos arquivos cadastrados recebem muitas etiquetas.
+%% Fontes: doc/modelo-de-dominio.md:L9-L50, L54-L100; doc/banco-de-dados.md:L40-L69.
+%% A contagem é derivada. NativeFile é um objeto de caminho, não uma tabela.
+flowchart LR
+    localFile["LocalFile<br>Cadastro de arquivo"]
+    classification{"classifica"}
+    tag["Tag<br>Etiqueta customizável"]
+    localFile ---|"0..N"| classification
+    classification ---|"0..N"| tag
+
+    nativeFile["NativeFile<br>Caminho do arquivo físico"]
+    localFile -.->|"contém referência"| nativeFile
+    extensions(["Extensões permitidas<br>0..N por Tag; sem lista = livre"])
+    tag ---|"restringe por"| extensions
+    availableCount(["Quantidade de arquivos disponíveis<br>calculada por consulta"])
+    tag -.->|"informação derivada"| availableCount
+
+    lifecycle["Ao perder a última Tag normal:<br>associar Etiqueta Ausente.<br>Órfãos são limpos na inicialização."]
+    localFile -.->|"regra de ciclo de vida"| lifecycle
+    physical["O conteúdo permanece no disco.<br>Excluir um cadastro não apaga o arquivo."]
+    nativeFile -.->|"representa localização"| physical
+
+    classDef entity fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    classDef value fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef derived fill:#a7f3d0,stroke:#047857,color:#374151,stroke-dasharray:5 5
+    class localFile,tag entity
+    class nativeFile,extensions value
+    class classification decision
+    class availableCount derived

@@ -1,56 +1,43 @@
-# Planejamento de instalação e execução
+# Instalação e execução: ambiente planejado
 
-[Índice](README.md) · [Rastreabilidade](rastreabilidade.md) · [Decisões e pendências](decisoes-e-pendencias.md)
+[Índice](README.md) · [Banco de dados](banco-de-dados.md) · [Pendências de ambiente](decisoes-e-pendencias.md#p-11)
 
-Este documento orienta a preparação futura do ambiente. [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-07](instalacao-e-execucao.md#amb-07) definem responsabilidades e parâmetros de referência; os comandos definitivos e as versões ainda abertas não são inventados. **As árvores de arquivos são estruturas a construir posteriormente, e os procedimentos não foram executados nesta missão.**
+O Tag-File usará uma instância MySQL local, administrada pela aplicação por scripts. Esta página explica o papel de cada parte e o fluxo a construir. Os scripts ainda não existem; versões, comandos definitivos e recuperação de preparação incompleta permanecem em P-11.
 
-DatabaseManager administrará a instância local; DatabaseConnection centralizará a conexão utilizada pelos DAOs. Cliente `mysql`, servidor `mysqld` e driver Java têm papéis diferentes. Nenhum artefato operacional é exigido para compreender este planejamento.
+## Entenda as peças antes de preparar o ambiente
+
+| Peça | Papel |
+|---|---|
+| JDK | Ferramentas e ambiente Java usados para desenvolver e executar a aplicação. A referência do projeto é o JDK 24. |
+| JDBC | API Java de acesso a banco, com tipos como Connection, PreparedStatement, ResultSet, DriverManager e SQLException. |
+| MySQL Connector/J | Driver que permite à aplicação conversar com MySQL pela API JDBC. |
+| Servidor mysqld | Processo que mantém o banco disponível para conexões. |
+| Cliente mysql | Programa de terminal que pode ser usado na preparação/administração do banco. |
+| DatabaseManager | Coordena a preparação e o ciclo da instância local do Tag-File. |
+| DatabaseConnection | Centraliza a conexão JDBC compartilhada pelos DAOs. |
+
+O driver Java não contém o servidor. Um DAO não precisa iniciar o cliente mysql de terminal para cada consulta: ele usa JDBC e o driver para comunicar-se com o servidor.
 
 <a id="amb-01"></a>
 
-## AMB-01 — Plataformas e autorização para instalar
+## Plataformas e instalação autorizada
 
-**Estado: confirmada.**
+| Plataforma | Scripts | Autorização prevista |
+|---|---|---|
+| Windows | PowerShell, arquivos .ps1. | Elevação pelo UAC quando necessária à instalação. |
+| Ubuntu e Linux Mint | Bash, arquivos .sh. | Mecanismo administrativo a definir; pkexec é uma possibilidade. |
 
-Plataformas consideradas:
+Ao abrir, o aplicativo verifica os componentes necessários de cliente e servidor MySQL. Se faltarem, solicita autorização para instalar. ProcessBuilder é o recurso definido para iniciar scripts/processos externos pelo Java.
 
-```text
-Windows
-Ubuntu
-Linux Mint
-```
+Recusa ou cancelamento não representa instalação concluída. A elevação para instalar não exige manter a UI permanentemente como administrador. A preparação deve respeitar as outras instalações MySQL da máquina.
 
-Ao abrir, o Tag-File deve verificar se os componentes necessários de cliente MySQL e servidor MySQL estão disponíveis. Se faltarem, solicitar autorização para instalar.
-
-No Windows, o solicitante pediu o pop-up de elevação do sistema, o UAC. Scripts PowerShell fazem parte da solução. No Linux, scripts Bash devem contemplar Ubuntu e Linux Mint. `pkexec` foi apresentado como mecanismo possível de autenticação administrativa, mas não é comando obrigatório homologado.
-
-`ProcessBuilder` foi aprovado para iniciar scripts/processos externos pelo Java. O cliente `mysql` e o servidor `mysqld` não são dois servidores que devem permanecer abertos: o cliente pode ser usado para preparar/administrar a estrutura; o servidor é o processo que atende as conexões.
-
-Verificar os executáveis não equivale a descobrir todas as instalações apenas por PATH. A estratégia de detecção é detalhe ainda não fechado. Também não foram definidos download, repositório de pacotes, versão ou distribuição de binários junto do aplicativo.
-
-O cancelamento da autorização não pode ser tratado como instalação bem-sucedida. Não redefinir as credenciais nem alterar dados de outras instâncias do usuário. A elevação para instalar não significa que a UI deva executar permanentemente como administrador.
+Detecção de executáveis/instâncias, download, pacotes, versão e distribuição de binários ainda não foram escolhidos. Procurar no PATH é uma possibilidade, não uma estratégia completa já definida.
 
 <a id="amb-02"></a>
 
-## AMB-02 — Estrutura database e localização dos dados
+## Organização dos arquivos operacionais
 
-**Estado: organização planejada e confirmada, com nomes de arquivos de referência.**
-
-O diretório está na raiz do projeto:
-
-```text
-<raiz-do-projeto>/database
-```
-
-Isso não significa `/database` na raiz do sistema operacional. A correção final permite subdiretório de dados e descarta a necessidade de inicializar em uma pasta temporária para depois mover tudo.
-
-Local de dados de referência aprovado na estrutura:
-
-```text
-database/runtime/data
-```
-
-Organização:
+A pasta database fica **dentro da raiz do projeto**. O local de referência dos dados é database/runtime/data. A árvore abaixo apresenta a organização e os nomes de referência a construir:
 
 ```text
 database/
@@ -59,7 +46,6 @@ database/
 │   ├── database.properties
 │   ├── mysql-windows.ini.template
 │   └── mysql-linux.cnf.template
-│
 ├── scripts/
 │   ├── windows/
 │   │   ├── check.ps1
@@ -67,59 +53,48 @@ database/
 │   │   ├── initialize.ps1
 │   │   ├── start.ps1
 │   │   └── stop.ps1
-│   │
 │   └── linux/
 │       ├── check.sh
 │       ├── install.sh
 │       ├── initialize.sh
 │       ├── start.sh
 │       └── stop.sh
-│
 ├── schema/
-│   └── scripts de criação e alteração
-│
+│   └── scripts SQL de criação e alteração
 └── runtime/
     ├── data/
     ├── logs/
     └── run/
 ```
 
-Os diretórios organizam configurações, scripts de plataforma, esquema, dados, logs e arquivos de execução. `check` e `install` surgiram na evolução dos exemplos para cobrir o requisito de verificação/instalação.
+| Grupo | Responsabilidade |
+|---|---|
+| Configurações e templates | Informar diretórios, parâmetros da instância e conexão. |
+| check | Verificar os componentes necessários. |
+| install | Instalar componentes ausentes depois da autorização. |
+| initialize | Preparar pela primeira vez um diretório de dados ainda não inicializado. |
+| start | Iniciar ou reconhecer a instância administrada. |
+| stop | Encerrar a instância identificada como pertencente ao Tag-File. |
+| schema | Criar e alterar tabelas. Nomes finais dos scripts e estratégia de reaplicação estão abertos. |
+| runtime | Manter dados, logs e informações de execução. |
 
-Nomes de schema que apareceram em versões diferentes:
-
-```text
-001_initial_schema.sql / 002_add_indexes.sql
-create.sql / update.sql
-```
-
-Essas variações não são dois mecanismos cumulativos obrigatórios. Os papéis dos futuros scripts de criação e alteração estão definidos; seus nomes finais permanecem abertos. Não é necessário encontrar arquivos SQL para explicar a estrutura. O exemplo `add_indexes` não aprova um índice específico.
-
-Na primeira preparação, inicializar o subdiretório de dados vazio/ainda não preparado. Nas próximas aberturas, reutilizar os dados. Não reapresentar a proposta descartada de criar dados fora de `database` e transferi-los.
-
-Não afirmar que logs, dados reais ou credenciais pessoais devem ser versionados. A política concreta de versionamento não foi fechada; registre o limite sem criar ou alterar arquivos de controle do repositório nesta missão documental.
+Os dados são preparados no local previsto e reutilizados nas próximas execuções; não há transferência obrigatória de uma inicialização feita em outra pasta. A política detalhada de versionamento ainda será combinada; dados pessoais, logs reais e credenciais pessoais não se tornam arquivos a compartilhar apenas por aparecerem nessa organização.
 
 <a id="amb-03"></a>
 
-## AMB-03 — Parâmetros públicos de desenvolvimento
+## Parâmetros públicos da instância didática
 
-| Parâmetro | Valor de referência consolidado | Estado |
-|---|---|---|
-| Usuário dos DAOs | `root` | Acesso administrativo solicitado explicitamente. |
-| Senha | `TagFile123!` | Deliberadamente escolhida/confirmada para o projeto didático. |
-| Porta | `3333` | Solicitação posterior substituindo exemplos anteriores. |
-| Banco | `tag_file` | Nome usado na configuração de referência. |
-| Endereço local | `127.0.0.1` | Configuração local apresentada. |
-| Reconexão | `autoReconnect=true` | Solicitada expressamente. |
-| Diretório de dados | `database/runtime/data` | Estrutura com subdiretório, após a correção final. |
+| Parâmetro | Valor de referência |
+|---|---|
+| Endereço | 127.0.0.1 |
+| Porta | 3333 |
+| Banco | tag_file |
+| Usuário dos DAOs | root |
+| Senha didática pública | TagFile123! |
+| Reconexão solicitada | autoReconnect=true |
+| Dados | database/runtime/data |
 
-URL de referência:
-
-```text
-jdbc:mysql://127.0.0.1:3333/tag_file?autoReconnect=true
-```
-
-Configuração ilustrativa que não deve ser criada ou alterada fora de `doc` nesta missão:
+Exemplo da configuração a construir:
 
 ```properties
 db.url=jdbc:mysql://127.0.0.1:3333/tag_file?autoReconnect=true
@@ -127,140 +102,69 @@ db.user=root
 db.password=TagFile123!
 ```
 
-O cliente fornece a senha da conta existente no servidor; não há duas senhas independentes para manter iguais por acaso.
+Esses valores pertencem à instância local exclusiva do projeto. A senha é a da conta do servidor usada pelo cliente; não há senhas independentes para manter iguais. A configuração administrativa é uma limitação didática e não deve redefinir root de outras instalações.
 
-Esses valores são públicos e didáticos. O uso administrativo e a senha previsível são limitações conhecidas, não uma configuração segura a recomendar genericamente para servidores expostos. A instância foi discutida como exclusiva e local do Tag-File; não redefinir `root` de outras instalações.
-
-Não trocar silenciosamente para usuário limitado, outra senha ou porta. Também não copiar credenciais reais eventualmente descobertas no repositório para a documentação sob o pretexto de consolidar o ambiente.
-
-A documentação pode registrar necessidade de detectar porta ocupada e mostrar erro. Não escolher outra porta automaticamente como requisito aprovado.
+Se a porta estiver ocupada, será necessário informar a situação; não há troca automática de porta definida.
 
 <a id="amb-04"></a>
 
-## AMB-04 — Preparação inicial e abertura subsequente
+## Primeira preparação e próximas aberturas
 
-**Primeira preparação — sequência funcional discutida:**
-
-```text
-Ler configuração
-→ verificar os componentes necessários
-→ solicitar e realizar instalação autorizada, se faltarem
-→ inicializar o diretório de dados ainda não preparado
-→ iniciar o servidor
-→ preparar conta e banco
-→ criar estrutura inicial
-→ disponibilizar a conexão da aplicação
-→ executar a inicialização do domínio
+```mermaid
+flowchart TD
+    A["Ler configuração e verificar componentes"] --> B{"Faltam componentes?"}
+    B -->|"Sim"| C["Solicitar autorização para instalar"]
+    C -->|"Instalação autorizada e concluída"| D{"Dados já preparados?"}
+    C -->|"Recusa ou falha"| X["Informar o resultado"]
+    B -->|"Não"| D
+    D -->|"Não"| I["Inicializar dados novos"]
+    D -->|"Sim"| R["Reutilizar dados existentes"]
+    I --> S["Iniciar ou reconhecer a instância"]
+    R --> S
+    S --> Q["Preparar conta, banco e estrutura conforme necessário"]
+    Q --> K["Disponibilizar conexão da aplicação"]
+    K --> L["Executar limpeza de inicialização do domínio"]
+    L --> M["Atualizar LocalFile remanescentes"]
+    M --> V["Disponibilizar exploradores"]
 ```
 
-**Aberturas seguintes:**
+O diagrama apresenta o fluxo funcional. Na primeira preparação, cria-se a estrutura inicial; nas seguintes, reutilizam-se os dados e tratam-se as alterações necessárias de schema. Comandos, esperas, identificação da instância e recuperação de etapas incompletas continuam em P-11.
 
-```text
-Reutilizar instalação e dados
-→ iniciar ou reconhecer a instância administrada
-→ preparar alterações necessárias do schema
-→ conectar
-→ executar limpeza exclusiva da inicialização
-→ atualizar todos os LocalFile
-→ disponibilizar os exploradores
-```
+**Inicializar os dados** e **iniciar o servidor** são operações diferentes. Uma falha de conexão não autoriza apagar o diretório, reinicializar o banco ou iniciar outro servidor com o mesmo conjunto de dados.
 
-Não apresentar essas sequências como scripts testados. Os tempos de espera, comandos definitivos, identificação de instância iniciada, estado de instalação incompleta e recuperação de falhas permanecem detalhes de implementação.
-
-Inicializar os dados pela primeira vez e iniciar um servidor preparado são operações diferentes. Uma falha de conexão não autoriza apagar o diretório nem iniciar outro servidor usando o mesmo conjunto de dados.
-
-A preparação estrutural também não autoriza recriar Tags predefinidas excluídas pelo usuário. Separar instalação inicial de dados de domínio, manutenção do schema e limpeza da sessão.
+A limpeza de domínio remove apenas cadastros com única Tag Etiqueta Ausente e cadastros sem associações, conforme [CIC-02](requisitos-e-regras.md#cic-02). Preserva arquivos físicos e a Tag protegida. Preparar o schema não recria automaticamente predefinidas apagadas pelo usuário.
 
 <a id="amb-05"></a>
 
-## AMB-05 — Conexão JDBC compartilhada e reconexão
+## Conexão compartilhada e reconexão
 
-**Estado: confirmada no modelo simplificado.**
+Os DAOs guardam referência à mesma instância de DatabaseConnection. Ela controla a abertura, tratamento e fechamento da conexão; não há pool. O DAO não deve fechar a conexão compartilhada ao terminar cada chamada. getConnection e close são nomes de referência, sem contrato completo de implementação.
 
-Uma classe `DatabaseConnection` concentra o tratamento da conexão. Os DAOs guardam referência à mesma instância. Não criar pool nem outro conjunto de classes de sessões para sofisticar a proposta.
+A configuração mantém autoReconnect=true. Essa opção não garante concluir uma operação interrompida, repetir escritas, desfazer alterações ou evitar exceções. A documentação do driver descreve limites e efeitos sobre estado de sessão e consistência. [Referência de autoReconnect](https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-high-availability-and-clustering.html).
 
-O solicitante escolheu `autoReconnect=true`. Reconexão não garante conclusão de uma operação interrompida, não desfaz alterações e não elimina a possibilidade de exceção. Não implementar repetição automática de escritas como consequência inventada dessa opção.
-
-Loading bloqueia novas interações conflitantes durante uma operação. A execução simultânea e a política completa de validade da conexão não foram homologadas; exemplos com `isClosed()` ou `isValid()` não devem ser apresentados como contratos testados.
-
-A classe central controla fechamento da conexão compartilhada. DAOs não devem destruir inadvertidamente a conexão usada por todos após cada chamada. Métodos como `getConnection()` e `close()` são referências de API discutidas, não código final certificado.
-
-Reconectar durante a sessão não executa novamente a limpeza de `Etiqueta Ausente`.
+Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausente. A validade da conexão e a coordenação de operações simultâneas ainda precisam ser combinadas; Loading apenas bloqueia novas interações conflitantes.
 
 <a id="amb-06"></a>
 
-## AMB-06 — JDK, JDBC e dependências
+## JDK, JDBC e inclusão do driver
 
-**Maven foi expressamente rejeitado.**
-
-O ambiente de referência discutido para o desenvolvimento considera o **JDK/SDK 24**. Esse é o contexto de referência, sem exigir configuração de IDE existente ou afirmar versão instalada. Não escolher outra versão por preferência nem criar requisito novo de suporte prolongado.
-
-Os tipos `Connection`, `PreparedStatement`, `ResultSet`, `DriverManager` e `SQLException` pertencem à API JDBC do Java. Maven não é necessário para esses imports.
-
-O MySQL Connector/J foi discutido como driver de referência para comunicação JDBC com MySQL. A inclusão manual de seu JAR, sem Maven, é a proposta de dependência utilizada:
+O ambiente de referência é **JDK 24**, sem Maven. JDBC faz parte da API Java; o driver MySQL Connector/J será incluído manualmente como JAR no desenvolvimento. A versão final de servidor e driver ainda precisa ser escolhida em P-11.
 
 ```text
 lib/
 └── mysql-connector-j-<versão>.jar
 ```
 
-A notação `<versão>` indica uma versão realmente não fechada, não uma informação aprovada omitida. A equipe precisará escolher a versão do driver e adicioná-lo manualmente no desenvolvimento futuro; [P-11](decisoes-e-pendencias.md#p-11) permanece aberta. Não exija o JAR nesta fase, não baixe nem instale bibliotecas.
+Colocar o JAR em lib e incluí-lo como biblioteca/classpath são tarefas diferentes. O classpath informa ao Java onde encontrar as classes da dependência. A equipe precisará configurar essa inclusão ao implementar a aplicação.
 
-Adicionar um JAR à pasta e configurá-lo como biblioteca/classpath são tarefas distintas a explicar no procedimento de execução. O driver Java não contém o servidor e não equivale a iniciar o cliente `mysql` de terminal para cada consulta.
-
-Não foram fixadas versões finais de MySQL Server e Connector/J. Versões numéricas citadas em exemplos didáticos anteriores não são escolha definitiva. Não acrescente Gradle, Spring, Hibernate ou outro gerenciador/ORM para substituir Maven sem autorização.
+A estrutura permanece sem Gradle, Spring, Hibernate ou outro gerenciador/ORM adicional. Ao escolher as versões, será preciso conferir a compatibilidade do JDK, servidor e driver; esta página não fixa uma versão por exemplo.
 
 <a id="amb-07"></a>
 
-## AMB-07 — Encerramento e preservação
+## Encerramento e preservação
 
-`DatabaseManager` foi aprovado para administrar a instância e os procedimentos de parada discutidos. Não foram formalizados todos os detalhes de fechamento forçado, reconhecimento de processo já iniciado e sequência de encerramento.
+DatabaseManager coordena a parada da instância administrada e DatabaseConnection o fechamento da conexão compartilhada. A ordem detalhada, identificação de um processo já iniciado e tratamento de encerramento forçado ainda estão em P-11.
 
-A administração do Tag-File não deve parar qualquer `mysqld` arbitrário do computador. Não assumir que todos os servidores MySQL encontrados pertencem ao projeto.
+O aplicativo deve reconhecer sua instância, sem parar qualquer mysqld encontrado no computador. Dados existentes permanecem preservados; falha operacional não autoriza uma limpeza destrutiva.
 
-O encerramento é uma responsabilidade planejada, com detalhes ainda não definidos e sem execução de scripts nesta missão. Na futura aplicação, dados existentes deverão ser preservados; falha operacional não autorizará limpeza destrutiva.
-
-
-
-## Responsabilidade dos futuros arquivos operacionais
-
-| Grupo / referência | O que deverá orientar sua construção |
-|---|---|
-| Configurações e templates | Parametrizar a instância local, diretório de dados e conexão; nomes da árvore [AMB-02](instalacao-e-execucao.md#amb-02) são referências. Não versionar dados pessoais por inferência. |
-| `check` | Verificar componentes necessários, sem considerar PATH uma estratégia completa já homologada. |
-| `install` | Instalar ausências mediante autorização; recusa/cancelamento e falhas precisam de comunicação clara. |
-| `initialize` | Preparar pela primeira vez o diretório ainda não inicializado, sem destruir dados anteriores. |
-| `start` | Iniciar ou reconhecer a instância administrada, conforme identificação a definir. |
-| `stop` | Encerrar a instância identificada como pertencente ao Tag-File, sem parar servidores arbitrários. |
-| Scripts de schema | Criar e alterar estrutura; [SQL-06](banco-de-dados.md#sql-06) não escolhe algoritmo de reaplicação e proíbe schema_history. |
-
-Os nomes `.ps1` e `.sh` correspondem às plataformas descritas em [AMB-02](instalacao-e-execucao.md#amb-02). A tabela explica responsabilidades, não entrega scripts executáveis. Versões, detecção, tempos de espera, estado parcial e encerramento detalhado continuam em [P-11](decisoes-e-pendencias.md#p-11).
-
-## Primeira preparação e reutilização
-
-```mermaid
-flowchart TD
-    A["Ler configuração e verificar componentes"] --> B{"Faltam componentes?"}
-    B -->|"Sim"| C["Solicitar autorização para instalar"]
-    C -->|"Autorizado e instalação concluída"| D{"Dados já preparados?"}
-    C -->|"Recusa ou falha"| X["Informar cancelamento ou resultado parcial"]
-    B -->|"Não"| D
-    D -->|"Não"| I["Inicializar dados ainda não preparados"]
-    D -->|"Sim"| R["Reutilizar dados existentes"]
-    I --> S["Iniciar ou reconhecer instância e preparar estrutura"]
-    R --> S
-    S --> Q["Disponibilizar conexão"]
-    Q --> L["Limpeza exclusiva da inicialização do domínio"]
-    L --> M["Atualizar todos os LocalFile remanescentes"]
-    M --> V["Disponibilizar exploradores"]
-```
-
-**Fluxo funcional planejado de [AMB-04](instalacao-e-execucao.md#amb-04)/[UC-01](casos-de-uso.md#uc-01).** Os demais pontos podem falhar e devem aplicar [ERR-01](requisitos-e-regras.md#err-01); a figura não afirma recuperação de instalação ou schema incompleto. Identificação de instância e comandos definitivos continuam abertos. Falha de conexão não autoriza reinicializar dados. A limpeza remove registros e associações nas condições de [CIC-02](requisitos-e-regras.md#cic-02), sem apagar arquivos físicos ou a Tag de sistema; indisponibilidade por si só não causa exclusão.
-
-## Preparação da execução quando a equipe implementar o sistema
-
-A equipe precisará distinguir a escolha e disponibilidade do JDK de referência, a escolha da versão do Connector/J, a colocação do JAR no local adotado e sua inclusão como biblioteca/classpath. **Colocar o JAR em `lib` e configurar o classpath são tarefas diferentes.** Depois, configuração e scripts deverão cumprir [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-07](instalacao-e-execucao.md#amb-07) e [SQL-06](banco-de-dados.md#sql-06). As escolhas ainda não fechadas permanecem em [P-11](decisoes-e-pendencias.md#p-11), sem downloads ou comandos prescritos por suposição.
-
-O driver Java usa JDBC para comunicar-se com o servidor; não contém o servidor nem precisa abrir o cliente `mysql` para cada consulta dos DAOs. DatabaseConnection disponibiliza a conexão compartilhada. Reconectar não repete a limpeza da sessão, não garante replay de escrita e não desfaz etapas físicas já concluídas.
-
-[ACE-23](criterios-de-aceite.md#ace-23)/[ACE-24](criterios-de-aceite.md#ace-24) orientam a futura verificação do ambiente. Não houve instalação, execução de procedimentos ou validação da aplicação para produzir este planejamento.
+Ao implementar o ambiente, use [UC-01](casos-de-uso.md#uc-01), [ACE-23](criterios-de-aceite.md#ace-23) e [ACE-24](criterios-de-aceite.md#ace-24) para conferir parâmetros, reutilização e tratamento da autorização.

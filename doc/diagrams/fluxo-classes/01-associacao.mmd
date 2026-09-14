@@ -1,0 +1,38 @@
+%% Sequência entre classes — criar/reutilizar cadastro e publicar uma associação.
+%% Fontes: doc/arquitetura-e-padroes.md:L70-L81, L101-L138, L176-L180.
+%% Fontes: doc/casos-de-uso.md:L79-L93; doc/decisoes-e-pendencias.md:L62-L78.
+%% [NEEDS INVESTIGATION] Validação distribuída, assinaturas e payloads ainda abertos.
+%% As mensagens descrevem responsabilidades; não são assinaturas Java aprovadas.
+sequenceDiagram
+    autonumber
+    participant screen as Screen (papel visual)
+    participant controller as Controller da visão
+    participant manager as LocalFileManager
+    participant fileDao as LocalFileDAO
+    participant factory as EntityFactory
+    participant linkDao as LocalFileTagDAO
+    participant events as ExplorerEventService
+    participant observers as Objetos ExplorerListener
+
+    screen->>controller: Arquivo + UUID da Tag + associação confirmada
+    Note over screen,manager: Trecho nominal após tratar compatibilidade e alternativas de UC-05.<br>Falhas seguem UC-15. A divisão das validações ainda está aberta.
+    controller->>manager: Coordenar associação aprovada
+    manager->>fileDao: Procurar LocalFile pelo caminho
+    fileDao-->>manager: Cadastro existente ou ausência
+    alt Cadastro já existe
+        Note over manager,fileDao: Reutilizar UUID e datas existentes
+    else Primeira classificação desse caminho
+        manager->>factory: Criar LocalFile com referência NativeFile
+        factory-->>manager: Novo cadastro
+        manager->>fileDao: Persistir novo LocalFile
+        Note over screen,manager: Criação aciona sugestão de predefinida compatível.<br>P-03 mantém supressão e escolha entre predefinidas abertas.
+    end
+    manager->>linkDao: Persistir vínculo LocalFile / Tag confirmado
+    opt Uma Tag normal substitui a sentinela
+        manager->>linkDao: Retirar vínculo com Etiqueta Ausente
+    end
+    manager-->>controller: Resultado real, inclusive eventual falha parcial
+    controller->>events: Publicar alteração pertinente ao que ocorreu
+    events->>observers: Avisar pelo contrato ExplorerListener
+    Note over events,observers: P-04: Screens observadoras são uma proposta.<br>P-05: parâmetros dos avisos ainda abertos.<br>O aviso atualiza a apresentação, sem repetir a associação.
+    controller-->>screen: Apresentar resultado e encerrar Loading

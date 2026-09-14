@@ -1,0 +1,35 @@
+%% Fluxo de usuário — UC-04: criar Tag, opcionalmente com arquivos iniciais.
+%% Fontes: doc/casos-de-uso.md:L61-L75; doc/requisitos-e-regras.md:L9-L13, L128-L134.
+%% [NEEDS INVESTIGATION] P-09: validações; ordem exata de escritas ainda aberta.
+flowchart TD
+    start(["Criar uma etiqueta"])
+    data[/"Informar nome, cor e extensões opcionais"/]
+    normalize["Normalizar extensões: PDF → .pdf<br>Lista vazia aceita qualquer extensão"]
+    duplicate{"Nome repetido?"}
+    confirmDuplicate{"Criar outra Tag com identidade própria?"}
+    chooseFiles{"Deseja selecionar arquivos iniciais?"}
+    folder["Abrir uma pasta no seletor;<br>visualizar arquivos compatíveis"]
+    select["Marcar somente os arquivos desejados<br>Seleção múltipla permitida neste fluxo"]
+    confirm{"Confirmar criação e seleção?"}
+    save["Criar a Tag e suas restrições;<br>associar somente os arquivos confirmados"]
+    result(["Etiqueta disponível nos exploradores"])
+    cancel(["Cancelar a ação ainda não confirmada"])
+    suggestion[["Novos cadastros: sugestão de predefinida<br>04-associacao · P-03"]]
+    limit["Escolher uma pasta não importa subpastas<br>nem classifica todos os arquivos exibidos."]
+    start --> data --> normalize --> duplicate
+    duplicate -->|"Sim"| confirmDuplicate
+    confirmDuplicate -->|"Sim"| chooseFiles
+    confirmDuplicate -->|"Não"| cancel
+    duplicate -->|"Não"| chooseFiles
+    chooseFiles -->|"Sim"| folder --> select --> confirm
+    chooseFiles -->|"Não; criar vazia"| confirm
+    confirm -->|"Sim"| save --> result
+    confirm -->|"Não / cancelar"| cancel
+    save -.->|"Quando um LocalFile é criado"| suggestion
+    folder -.-> limit
+    classDef trigger fill:#fed7aa,stroke:#c2410c,color:#374151
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef success fill:#a7f3d0,stroke:#047857,color:#374151
+    class start trigger
+    class duplicate,confirmDuplicate,chooseFiles,confirm decision
+    class result success

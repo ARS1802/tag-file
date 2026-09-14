@@ -1,0 +1,35 @@
+%% Sequência entre classes — uma atualização global, várias apresentações avisadas.
+%% Fontes: doc/arquitetura-e-padroes.md:L38-L64, L194-L204; doc/casos-de-uso.md:L233-L245.
+%% [NEEDS INVESTIGATION] P-04/P-05: observadores/avisos; P-10/P-12: dados e execução.
+%% Cenário de sucesso; falhas retornam pelo fluxo de usuário 11-falhas.
+sequenceDiagram
+    autonumber
+    participant screen as Screen solicitante
+    participant controller as Controller da visão
+    participant manager as LocalFileManager
+    participant dao as LocalFileDAO
+    participant native as NativeFileService
+    participant events as ExplorerEventService
+    participant observers as Objetos ExplorerListener
+
+    screen->>controller: Refresh, troca de aba ou aplicação de filtros
+    Note over screen,controller: Mostrar Loading e bloquear novas interações conflitantes
+    controller->>manager: Coordenar uma atualização global (refreshAll)
+    manager->>dao: Carregar todos os LocalFile
+    dao-->>manager: Cadastros conhecidos
+    loop Para cada cadastro, uma vez nesta solicitação
+        manager->>native: Conferir caminho e ler metadados físicos
+        native-->>manager: Disponibilidade, tamanho e datas disponíveis
+        manager->>dao: Persistir a atualização pertinente
+    end
+    Note over manager,dao: Sem limpeza de cadastros na sentinela ou órfãos.<br>P-10: datas ausentes e UPDATE sem alteração ainda abertos.
+    manager-->>controller: Atualização concluída
+    opt Solicitação também contém filtros
+        Note over controller,dao: Executar a consulta pretendida após a atualização.<br>P-05: localização e assinatura da busca por Tags ainda abertas.
+    end
+    controller->>events: Publicar atualização pertinente
+    loop Para cada objeto interessado inscrito
+        events->>observers: Chamar pelo contrato ExplorerListener
+    end
+    Note over events,observers: Atualizar a apresentação sem chamar outro refreshAll.<br>Observer não transfere automaticamente o callback para a EDT.<br>P-12: mecanismo de execução e coordenação ainda aberto.
+    controller-->>screen: Concluir solicitação e encerrar Loading

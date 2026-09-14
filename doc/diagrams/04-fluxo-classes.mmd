@@ -1,0 +1,49 @@
+%% Fluxo de classes — dependências centrais; comportamento em fluxo-classes/.
+%% Fontes: doc/arquitetura-e-padroes.md:L25-L56, L70-L97, L113-L152.
+%% Linhas tracejadas com seta indicam uso, não herança nem execução paralela.
+%% refreshAll e cleanupOrphans são nomes de referência, não assinaturas fechadas.
+%% Screens/observadores: P-04; consultas e parâmetros dos avisos: P-05.
+classDiagram
+    direction LR
+    class TagExplorerController
+    class LocalFileExplorerController
+    class LocalFileManager {
+        refreshAll()
+        cleanupOrphans()
+    }
+    class NativeFileService
+    class ClipboardService
+    class LocalFileDAO
+    class LocalFileTagDAO
+    class TagDAO
+    class DatabaseConnection
+    class ExplorerEventService
+    class ExplorerListener {
+        <<interface>>
+        onFileChanged()
+        onTagChanged()
+        onFileTagsChanged()
+    }
+
+    TagExplorerController ..> LocalFileManager : coordena cadastros
+    LocalFileExplorerController ..> LocalFileManager : coordena cadastros
+    TagExplorerController ..> ClipboardService : usa COPY ou CUT
+    LocalFileExplorerController ..> ClipboardService : usa COPY ou CUT
+    TagExplorerController ..> ExplorerEventService : publica alterações
+    LocalFileExplorerController ..> ExplorerEventService : publica alterações
+    LocalFileExplorerController ..> NativeFileService : opera sem cadastro
+    LocalFileManager ..> NativeFileService : opera disco
+    LocalFileManager ..> LocalFileDAO : persiste
+    LocalFileManager ..> LocalFileTagDAO : mantém vínculos
+    TagExplorerController ..> TagDAO : consulta e persiste Tags
+    LocalFileDAO --> DatabaseConnection : compartilha
+    LocalFileTagDAO --> DatabaseConnection : compartilha
+    TagDAO --> DatabaseConnection : compartilha
+    ExplorerEventService --> ExplorerListener : avisa objetos inscritos
+
+    note for LocalFileManager "Atualização e limpeza são separadas.<br>Os métodos são nomes de referência."
+    note for ExplorerListener "Nomes de avisos de referência.<br>Parâmetros abertos: P-05.<br>Screens observadoras: proposta P-04."
+    note for TagDAO "Também persiste as extensões.<br>Consulta de Tag retorna Tag."
+    style LocalFileManager fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    style NativeFileService fill:#fed7aa,stroke:#c2410c,color:#374151
+    style ExplorerEventService fill:#a7f3d0,stroke:#047857,color:#374151
