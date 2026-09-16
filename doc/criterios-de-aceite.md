@@ -2,7 +2,7 @@
 
 [Índice](README.md) · [Casos de uso](casos-de-uso.md) · [Ordem de construção](arquitetura-e-padroes.md#orientacao-construcao)
 
-Um critério de aceite descreve uma situação e o resultado que a funcionalidade precisa produzir. Os 24 cenários abaixo estão previstos para validação após a implementação; não representam testes já executados nem uma rubrica adicional da disciplina.
+Um critério de aceite descreve uma situação e o resultado que a funcionalidade precisa produzir. Os 25 cenários abaixo estão previstos para validação após a implementação; não representam testes já executados nem uma rubrica adicional da disciplina.
 
 Para cada cenário, prepare a condição, execute a ação e compare o resultado. Registre a evidência quando fizer a verificação. Se houver uma pendência indicada, seu resultado completo depende da decisão correspondente.
 
@@ -243,6 +243,16 @@ Para cada cenário, prepare a condição, execute a ação e compare o resultado
 - **Ação:** Abrir a aplicação e contemplar recusa ou cancelamento da autorização de instalação.
 - **Resultado esperado:** Ausência de componentes solicita autorização para instalar; cancelamento não é apresentado como sucesso.
 - **Limites e consequências:** UAC está previsto no Windows; Linux contempla Ubuntu/Mint, com pkexec apenas proposto. Instaladores/detecção em [P-11](decisoes-e-pendencias.md#p-11).
+
+<a id="ace-25"></a>
+
+## ACE-25 — Permitir apenas uma ação por vez, sem fila
+
+- **Regras:** [OP-09](requisitos-e-regras.md#op-09), [UI-03](interface-e-fluxos.md#ui-03), [DEC-02](decisoes-e-pendencias.md#dec-02).
+- **Condição:** Dois exploradores disponíveis e uma ação em andamento, com execução controlada para permitir observar o intervalo ocupado.
+- **Ação:** Tentar iniciar outra ação no mesmo explorador e no outro, por botão, atalho e Drop. Simular também nova solicitação automática e repetição da chamada de entrada. Conferir o encerramento em cenários separados de sucesso, falha e cancelamento.
+- **Resultado esperado:** No máximo uma ação permanece em andamento em toda a aplicação. As novas solicitações não iniciam trabalho, não são enfileiradas e não executam automaticamente depois. A UI responde e permite os diálogos da ação atual. Quando essa ação termina, Loading e o estado ocupado são encerrados, permitindo uma nova solicitação.
+- **Limites e consequências:** Verificar o controle comum além dos botões desabilitados. A seleção múltipla aprovada conta como uma única ação; suas etapas internas não são novas solicitações independentes. Não exigir uma única thread nem reversão de etapas concluídas. O mecanismo técnico e as demais políticas de lotes continuam em [P-12](decisoes-e-pendencias.md#p-12).
 
 ## Verificação das sugestões de etiquetas
 

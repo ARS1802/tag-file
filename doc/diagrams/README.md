@@ -26,11 +26,13 @@ No MER, `PK` identifica a entidade, `FK` referencia outra entidade e `UK` indica
 
 As informações do domínio também estão cobertas quando não viram uma coluna escalar: `nativeFile` fornece a referência de caminho representada por `path`; a coleção de Tags é representada por `LOCAL_FILE_TAG`; a coleção de extensões fica em `EXTENSOES_DA_TAG`. A quantidade de disponíveis é **calculada por consulta**, aparece como informação derivada no DER e não é uma coluna de `TAG`. NativeFile e NativeDirectory não exigem tabelas próprias. [doc/modelo-de-dominio.md:L13-L19](../modelo-de-dominio.md#dom-01), [doc/modelo-de-dominio.md:L70-L100](../modelo-de-dominio.md#dom-03), [doc/banco-de-dados.md:L118-L124](../banco-de-dados.md#sql-06).
 
-**[NEEDS INVESTIGATION] P-06/P-07:** `name` e `extension` constam no inventário porque são informações necessárias, mas persistir cada uma em coluna própria ainda depende de decisão. Também estão abertos os tipos físicos, nulabilidade, índices, chaves das tabelas de vínculo, cascatas, nome definitivo da tabela de extensões e identificação técnica da sentinela. Os diagramas não acrescentam um campo de sistema nem escolhem uma chave composta. [doc/decisoes-e-pendencias.md:L80-L98](../decisoes-e-pendencias.md#p-06).
+**[NEEDS INVESTIGATION] P-06/P-07:** `name` e `extension` constam no inventário porque são informações necessárias, mas persistir cada uma em coluna própria ainda depende de decisão. Também estão abertos os tipos físicos, nulabilidade, índices, chaves das tabelas de vínculo, cascatas, nome definitivo da tabela de extensões e identificação técnica da sentinela. Os diagramas não acrescentam um campo de sistema nem escolhem uma chave composta. [doc/decisoes-e-pendencias.md:L90-L108](../decisoes-e-pendencias.md#p-06).
 
 ## Percursos do usuário
 
 Retângulos duplos indicam um percurso detalhado em outro arquivo. Losangos indicam escolhas ou condições; verde marca resultados, vermelho destaca falhas ou exclusões físicas e amarelo também sinaliza decisões pendentes. As divisões organizam a documentação, sem definir posições de botões ou um novo menu da aplicação. A composição visual permanece nos limites de [P-04](../decisoes-e-pendencias.md#p-04) e [P-12](../decisoes-e-pendencias.md#p-12).
+
+Todos os percursos respeitam [OP-09](../requisitos-e-regras.md#op-09): apenas uma ação em andamento na aplicação inteira, compartilhada pelos exploradores, sem fila ou sequências armazenadas. As etapas internas e os diálogos pertencem à ação atual. Os detalhes de Refresh e falhas mostram a admissão e a liberação desse controle; conferir pelo [ACE-25](../criterios-de-aceite.md#ace-25).
 
 | Percurso | Mermaid | Imagem | Cobertura e fonte |
 |---|---|---|---|
@@ -46,7 +48,7 @@ Retângulos duplos indicam um percurso detalhado em outro arquivo. Losangos indi
 | Refresh compartilhado | [10-refresh](fluxo-usuario/10-refresh.mmd) | [SVG](svg/fluxo-usuario/10-refresh.svg) | [UC-14](../casos-de-uso.md#uc-14): uma atualização por solicitação, sem limpeza de cadastros. |
 | Falhas | [11-falhas](fluxo-usuario/11-falhas.mmd) | [SVG](svg/fluxo-usuario/11-falhas.svg) | [UC-15](../casos-de-uso.md#uc-15): resultado parcial, detalhes e saída de Loading. |
 
-O percurso de falhas se aplica a todas as etapas falíveis, mesmo quando o desenho de detalhe apresenta somente o caminho nominal. Cancelar impede a ação ainda não confirmada; não desfaz uma etapa concluída. A ordem completa de confirmações e escritas da cópia continua aberta, assim como o resultado final da modalidade 2 de exclusão. [doc/requisitos-e-regras.md:L194-L196](../requisitos-e-regras.md#op-07), [doc/decisoes-e-pendencias.md:L32-L48](../decisoes-e-pendencias.md#p-01).
+O percurso de falhas se aplica a todas as etapas falíveis, mesmo quando o desenho de detalhe apresenta somente o caminho nominal. Cancelar impede a ação ainda não confirmada; não desfaz uma etapa concluída. A ordem completa de confirmações e escritas da cópia continua aberta, assim como o resultado final da modalidade 2 de exclusão. [doc/requisitos-e-regras.md:L194-L196](../requisitos-e-regras.md#op-07), [doc/decisoes-e-pendencias.md:L42-L58](../decisoes-e-pendencias.md#p-01).
 
 ## Colaboração entre classes
 
@@ -54,14 +56,18 @@ O diagrama principal apresenta as dependências mais relevantes; ele não preten
 
 | Detalhe | Mermaid | Imagem | Fonte principal |
 |---|---|---|---|
-| Associar arquivo e avisar a interface | [01-associacao](fluxo-classes/01-associacao.mmd) | [SVG](svg/fluxo-classes/01-associacao.svg) | [doc/arquitetura-e-padroes.md:L176-L180](../arquitetura-e-padroes.md#percurso-associacao) |
-| Recortar em uma visão e colar na outra | [02-recortar-colar](fluxo-classes/02-recortar-colar.mmd) | [SVG](svg/fluxo-classes/02-recortar-colar.svg) | [doc/arquitetura-e-padroes.md:L184-L190](../arquitetura-e-padroes.md#percurso-movimentacao) |
-| Refresh e Observer | [03-refresh-observer](fluxo-classes/03-refresh-observer.mmd) | [SVG](svg/fluxo-classes/03-refresh-observer.svg) | [doc/arquitetura-e-padroes.md:L194-L204](../arquitetura-e-padroes.md#percurso-refresh) |
+| Associar arquivo e avisar a interface | [01-associacao](fluxo-classes/01-associacao.mmd) | [SVG](svg/fluxo-classes/01-associacao.svg) | [doc/arquitetura-e-padroes.md:L178-L182](../arquitetura-e-padroes.md#percurso-associacao) |
+| Recortar em uma visão e colar na outra | [02-recortar-colar](fluxo-classes/02-recortar-colar.mmd) | [SVG](svg/fluxo-classes/02-recortar-colar.svg) | [doc/arquitetura-e-padroes.md:L186-L192](../arquitetura-e-padroes.md#percurso-movimentacao) |
+| Refresh e Observer | [03-refresh-observer](fluxo-classes/03-refresh-observer.mmd) | [SVG](svg/fluxo-classes/03-refresh-observer.svg) | [doc/arquitetura-e-padroes.md:L196-L206](../arquitetura-e-padroes.md#percurso-refresh) |
 | Preparação do banco e da sessão | [04-ambiente](fluxo-classes/04-ambiente.mmd) | [SVG](svg/fluxo-classes/04-ambiente.svg) | [doc/instalacao-e-execucao.md:L111-L168](../instalacao-e-execucao.md#amb-04) |
-| Factory, composição, DAO e filtros | [05-contratos-e-criacao](fluxo-classes/05-contratos-e-criacao.mmd) | [SVG](svg/fluxo-classes/05-contratos-e-criacao.svg) | [doc/arquitetura-e-padroes.md:L101-L138](../arquitetura-e-padroes.md#arq-02), [doc/interface-e-fluxos.md:L63-L96](../interface-e-fluxos.md#exp-02) |
+| Factory, composição, DAO e filtros | [05-contratos-e-criacao](fluxo-classes/05-contratos-e-criacao.mmd) | [SVG](svg/fluxo-classes/05-contratos-e-criacao.svg) | [doc/arquitetura-e-padroes.md:L103-L140](../arquitetura-e-padroes.md#arq-02), [doc/interface-e-fluxos.md:L63-L96](../interface-e-fluxos.md#exp-02) |
 
-`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes de referência da documentação, e os parênteses no desenho não fixam métodos sem parâmetros. A proposta de Screens observadoras e os dados enviados nos avisos dependem de P-04/P-05. As chamadas diretas entre Controllers e colaboradores seguem a decisão encerrada DEC-01. [doc/arquitetura-e-padroes.md:L52-L56](../arquitetura-e-padroes.md#arq-06), [doc/arquitetura-e-padroes.md:L95-L97](../arquitetura-e-padroes.md#arq-07), [doc/decisoes-e-pendencias.md:L22-L28](../decisoes-e-pendencias.md#dec-01).
+`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes de referência da documentação, e os parênteses no desenho não fixam métodos sem parâmetros. A proposta de Screens observadoras e os dados enviados nos avisos dependem de P-04/P-05. As chamadas diretas entre Controllers e colaboradores seguem a decisão encerrada DEC-01. [doc/arquitetura-e-padroes.md:L52-L56](../arquitetura-e-padroes.md#arq-06), [doc/arquitetura-e-padroes.md:L97-L99](../arquitetura-e-padroes.md#arq-07), [doc/decisoes-e-pendencias.md:L22-L28](../decisoes-e-pendencias.md#dec-01).
 
-## Verificação da entrega
+## Registro da verificação original
 
 Os 20 arquivos Mermaid foram renderizados com sucesso e suas prévias foram inspecionadas visualmente. As 20 imagens SVG correspondem às fontes finais. Foram conferidos os 82 links locais deste índice, os intervalos das citações nos desenhos, a presença dos 15 casos de uso e o inventário de 18 campos apresentados no MER, com as informações relacionais e derivadas explicadas acima.
+
+## Verificação da atualização de execução exclusiva
+
+Na atualização de OP-09/DEC-02, os diagramas de Refresh do usuário, Refresh/Observer entre classes e falhas foram renderizados em PNG e inspecionados visualmente. As 33 referências de linhas afetadas pelas inserções na documentação foram sincronizadas. A conferência dos 408 links locais da documentação não encontrou novas referências ausentes nem âncoras duplicadas. As prévias SVG não foram regeneradas nesta atualização; as fontes Mermaid contêm a regra atual.

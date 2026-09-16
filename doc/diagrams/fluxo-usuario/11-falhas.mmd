@@ -1,14 +1,15 @@
 %% Fluxo de usuário — UC-15 e OP-07: falha parcial não equivale a cancelamento prévio.
-%% Fontes: doc/casos-de-uso.md:L249-L261; doc/requisitos-e-regras.md:L194-L196, L276-L288.
+%% Fontes: doc/casos-de-uso.md:L251-L263; doc/requisitos-e-regras.md:L194-L196, L292-L304.
 %% Este percurso se aplica às etapas falíveis dos demais diagramas.
+%% Liberação da ação: doc/requisitos-e-regras.md#op-09; verificação: doc/criterios-de-aceite.md#ace-25.
 flowchart TD
     failure(["Falha em consulta, disco, SQL ou processo externo"])
     completed{"Alguma etapa já foi concluída?"}
     partial["Informar o que concluiu e o que falhou<br>Ex.: moveu no disco; falhou ao salvar caminho"]
     initial["Informar a etapa que falhou<br>e que a ação não foi concluída"]
-    loading["Encerrar Loading"]
+    loading["Encerrar Loading ao terminar a ação<br>e liberar o controle compartilhado"]
     details["Mostrar mensagem compreensível<br>com detalhes técnicos expansíveis"]
-    finish(["Usuário conhece o estado real da operação"])
+    finish(["Usuário conhece o resultado e pode solicitar outra ação<br>Solicitações bloqueadas não executam automaticamente"])
     limitation["Sem reversão ou repetição automática garantida.<br>Cancelar não desfaz etapas concluídas.<br>P-12: continuar ou interromper lotes em aberto."]
     failure --> completed
     completed -->|"Sim"| partial --> loading

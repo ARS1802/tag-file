@@ -142,7 +142,7 @@ Os DAOs guardam referência à mesma instância de DatabaseConnection. Ela contr
 
 A configuração mantém autoReconnect=true. Essa opção não garante concluir uma operação interrompida, repetir escritas, desfazer alterações ou evitar exceções. A documentação do driver descreve limites e efeitos sobre estado de sessão e consistência. [Referência de autoReconnect](https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-high-availability-and-clustering.html).
 
-Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausente. A validade da conexão e a coordenação de operações simultâneas ainda precisam ser combinadas; Loading apenas bloqueia novas interações conflitantes.
+Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausente. Todas as ações respeitam o limite compartilhado de [uma ação por vez](requisitos-e-regras.md#op-09), sem fila. A verificação de validade da conexão e o mecanismo técnico para garantir esse limite ainda precisam ser combinados; apresentar Loading, isoladamente, não controla as demais entradas da aplicação.
 
 <a id="amb-06"></a>
 

@@ -72,6 +72,7 @@ Diretórios servem à navegação e aos destinos das operações. Não haverá c
 | Conexão | DatabaseConnection compartilhada, sem pool. |
 | Transações | Sem controle explícito de transações; operações podem terminar parcialmente. |
 | Coordenação | Controllers chamam Managers/Services diretamente. A retirada de Command está encerrada em [DEC-01](decisoes-e-pendencias.md#dec-01). |
+| Execução | Apenas uma ação por vez em toda a aplicação, compartilhada pelos dois exploradores. Novas ações são bloqueadas, sem fila ou sequências armazenadas; a UI permanece responsiva. [DEC-02](decisoes-e-pendencias.md#dec-02). |
 | Undo/Redo | Fora da implementação atual; evolução apenas comentada. |
 | Clipboard | Compartilhado internamente; integração com o sistema operacional apenas comentada como evolução. |
 | Monitoramento | Sem vigilância contínua do sistema de arquivos. |

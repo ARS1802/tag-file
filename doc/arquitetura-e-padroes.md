@@ -61,7 +61,7 @@ O listener de um componente encaminha uma solicitação do usuário. O aviso do 
 
 Swing atualiza seus componentes, em geral, na **Event Dispatch Thread (EDT)**. Uma chamada comum de callback executa na thread que a chama; usar Observer não transfere automaticamente o trabalho para a EDT. Operações demoradas nessa thread deixam a interface sem responder. [Política de threads do Swing](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/package-summary.html).
 
-SwingWorker é uma alternativa para realizar trabalho em segundo plano e aplicar o resultado à interface. Sua adoção e a coordenação das operações com a conexão compartilhada continuam em P-12. O pop-up Loading bloqueia novas interações conflitantes, mas não define sozinho o controle de tarefas simultâneas. [API de SwingWorker](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/SwingWorker.html).
+SwingWorker é uma alternativa para realizar trabalho em segundo plano e aplicar o resultado à interface. Sua adoção e o mecanismo de controle da execução continuam em P-12. O comportamento já está definido: apenas uma ação em andamento na aplicação, compartilhada pelos dois exploradores, sem fila, conforme [OP-09](requisitos-e-regras.md#op-09). Trabalho em segundo plano mantém a UI responsiva e não autoriza outra ação simultânea. [API de SwingWorker](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/SwingWorker.html).
 
 O padrão Observer já era usado antes de 2025. As classes java.util.Observable e java.util.Observer foram desaconselhadas desde Java 9 por limitações do modelo de eventos; o JDK 24 mantém essa depreciação. O projeto prevê seu próprio ExplorerListener. [API de Observable](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Observable.html).
 
@@ -81,6 +81,8 @@ Quando há LocalFile, LocalFileManager coordena as etapas de disco pelo NativeFi
 O Controller acompanha o resultado real, inclusive falhas parciais. Uma consulta sem alteração não exige evento de sucesso. As chamadas são diretas: a retirada de Command está encerrada em [DEC-01](decisoes-e-pendencias.md#dec-01), preservando as funcionalidades físicas.
 
 O filtro restringe resultados; o usuário seleciona os alvos; a operação usa a seleção confirmada. Repetir o filtro não pode trocar silenciosamente os arquivos afetados depois da confirmação.
+
+Os dois Controllers devem respeitar o mesmo controle de ação em andamento. Uma nova solicitação recebida enquanto outra executa é bloqueada, sem enfileiramento; isso vale também para gatilhos automáticos e reentrância. Consultas, etapas físicas, persistência e avisos necessários ao fluxo pertencem à ação atual. O controle é liberado ao encerrar a ação por sucesso, falha ou cancelamento. O mecanismo concreto permanece em P-12, sem exigir uma nova classe ou padrão pelo nome.
 
 <a id="arq-07"></a>
 
@@ -201,7 +203,7 @@ Botão Refresh, troca de aba ou aplicação de filtros
 → apresentações atualizam o que mostram
 ```
 
-Uma solicitação atualiza todos os LocalFile uma vez. O aviso não provoca outro Refresh; refreshAll não limpa cadastros sem classificação. Dados ausentes, escritas sem alteração e reentrância continuam em P-10/P-12. Veja [UC-14](casos-de-uso.md#uc-14).
+Uma solicitação admitida pelo controle de [OP-09](requisitos-e-regras.md#op-09) atualiza todos os LocalFile uma vez. O aviso não provoca outro Refresh; refreshAll não limpa cadastros sem classificação. Dados ausentes e escritas sem alteração continuam em P-10. P-12 mantém aberta a implementação do controle compartilhado; impedir reentrância já é requisito. Veja [UC-14](casos-de-uso.md#uc-14).
 
 <a id="orientacao-construcao"></a>
 
@@ -227,7 +229,7 @@ A sequência abaixo organiza as responsabilidades existentes. Antes de fechar um
 
 <a id="bloco-interface"></a>
 
-5. **Interface:** apresentar arquivos, Tags, filtros, confirmações e falhas. Conferir as duas visões com dados consistentes; estados vazios e coordenação de tarefas dependem de P-12/P-13.
+5. **Interface:** apresentar arquivos, Tags, filtros, confirmações e falhas. Conferir as duas visões com dados consistentes; estados vazios e o mecanismo de execução de uma ação por vez dependem de P-12/P-13.
 
 <a id="bloco-operacoes"></a>
 

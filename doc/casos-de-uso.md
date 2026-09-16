@@ -8,6 +8,8 @@ Arquivo físico, cadastro e associação são diferentes: retirar uma etiqueta n
 
 As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertura completa. As regras e pendências continuam sendo a referência para o restante do comportamento.
 
+**Regra comum a todos os fluxos:** apenas uma ação pode estar em andamento na aplicação, compartilhando esse limite entre os dois exploradores. Novas solicitações durante uma ação são bloqueadas e não ficam em fila. As etapas e os diálogos do fluxo atual pertencem à mesma ação; ao encerrar por sucesso, falha ou cancelamento, liberar a aplicação. Aplicar [OP-09](requisitos-e-regras.md#op-09) e verificar pelo [ACE-25](criterios-de-aceite.md#ace-25).
+
 <a id="uc-01"></a>
 
 ## UC-01 — Preparar e abrir o Tag-File
@@ -236,13 +238,13 @@ Não prometer execução atômica nem reversão. Se houver falha parcial, inform
 
 **Gatilho:** botão Refresh único, troca de aba ou aplicação de filtros; a inicialização também atualiza todos, mas possui sua limpeza própria.
 
-**Sequência:** mostrar Loading; coordenar uma atualização de todos os `LocalFile`; executar a consulta pretendida quando houver; publicar o evento pertinente pelo Controller; atualizar a apresentação das duas visões; encerrar Loading conforme sucesso ou falha.
+**Sequência:** admitir a solicitação somente se nenhuma ação estiver em andamento; mostrar Loading; coordenar uma atualização de todos os `LocalFile`; executar a consulta pretendida quando houver; publicar o evento pertinente pelo Controller; atualizar a apresentação das duas visões; encerrar Loading e liberar o controle compartilhado ao terminar. Atualização e consulta integram a mesma ação. Solicitações recebidas durante outra ação são bloqueadas, sem fila.
 
 **Invariantes:** não limpar `Etiqueta Ausente`; não atualizar todos novamente apenas porque cada Screen recebeu evento; não iniciar Refresh por toda navegação de pasta.
 
-**Implementação interna:** a interface precisa permanecer responsiva. SwingWorker é uma alternativa de estudo; a escolha e a coordenação de tarefas continuam em P-12. A versão não usa pool de conexões. Veja o [Observer e Swing](arquitetura-e-padroes.md#arq-06).
+**Implementação interna:** a interface precisa permanecer responsiva enquanto somente uma ação executa. SwingWorker é uma alternativa de estudo; sua adoção e o mecanismo que garante [OP-09](requisitos-e-regras.md#op-09) continuam em P-12. A versão não usa pool de conexões. Veja o [Observer e Swing](arquitetura-e-padroes.md#arq-06).
 
-**Verificação relacionada:** [ACE-13](criterios-de-aceite.md#ace-13) e [ACE-21](criterios-de-aceite.md#ace-21): ausência de limpeza na sessão e atualização sem duplicação.
+**Verificação relacionada:** [ACE-13](criterios-de-aceite.md#ace-13), [ACE-21](criterios-de-aceite.md#ace-21) e [ACE-25](criterios-de-aceite.md#ace-25): ausência de limpeza na sessão, atualização sem duplicação e bloqueio global de novas ações, sem fila.
 
 <a id="uc-15"></a>
 
@@ -252,10 +254,10 @@ Não prometer execução atômica nem reversão. Se houver falha parcial, inform
 
 **Gatilho:** uma consulta, etapa física, persistência ou processo externo falha.
 
-**Resultado esperado:** mensagem compreensível, etapas concluídas, etapa com falha e detalhes específicos disponíveis em uma área expansível. Encerrar o estado de Loading para não deixar a UI bloqueada indefinidamente.
+**Resultado esperado:** mensagem compreensível, etapas concluídas, etapa com falha e detalhes específicos disponíveis em uma área expansível. Ao terminar o tratamento da ação, encerrar Loading e liberar o controle compartilhado para permitir nova solicitação. Não executar automaticamente ações que foram bloqueadas durante a anterior.
 
 **Sem garantias:** não dizer que `autoReconnect=true` desfez ou repetiu uma operação; não prometer recuperação física ou transação entre banco e disco. Falha de instalação também não autoriza apagar dados existentes.
 
 Diagnósticos devem usar somente os detalhes disponíveis e não expor credenciais pessoais.
 
-**Verificação relacionada:** [ACE-22](criterios-de-aceite.md#ace-22): mensagem do resultado parcial e encerramento de Loading. Recuperação e política de lotes continuam abertas.
+**Verificação relacionada:** [ACE-22](criterios-de-aceite.md#ace-22) e [ACE-25](criterios-de-aceite.md#ace-25): mensagem do resultado parcial, encerramento de Loading e liberação do controle compartilhado. Recuperação e política de lotes continuam abertas.

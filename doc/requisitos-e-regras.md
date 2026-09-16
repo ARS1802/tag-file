@@ -203,6 +203,22 @@ ClipboardService é compartilhado pelos exploradores e guarda a intenção COPY 
 
 A representação interna, comportamento após colar, repetição de CUT, histórico e persistência entre execuções não estão definidos. [P-12](decisoes-e-pendencias.md#p-12) reúne esses contratos. A integração com o clipboard do sistema operacional é apenas uma evolução comentada.
 
+<a id="op-09"></a>
+
+## Uma ação por vez em toda a aplicação
+
+**A aplicação permite apenas uma ação em andamento por vez.** O limite é compartilhado pelos dois exploradores: iniciar uma ação em Arquivos por Tag impede iniciar outra em Arquivos Local, e vice-versa. A decisão está registrada em [DEC-02](decisoes-e-pendencias.md#dec-02).
+
+Uma ação é uma solicitação funcional, como associar uma seleção de arquivos, colar ou executar um Refresh global. Suas confirmações, consultas, etapas de disco e SQL e atualização da apresentação pertencem à mesma ação. A seleção múltipla já prevista na associação inicial continua permitida como uma única ação; esta regra não limita toda ação a um único arquivo nem resolve as demais políticas de lotes de P-12.
+
+Antes de iniciar uma ação, verificar se outra está em andamento. Enquanto estiver ocupada, a aplicação bloqueia novas ações por botão, atalho, Drop ou pelo outro explorador. Solicitações automáticas e chamadas repetidas também respeitam esse limite, impedindo reentrância — iniciar novamente uma ação antes de a anterior terminar.
+
+**Não há fila de ações nem montagem de sequências para executar depois.** Uma nova solicitação recebida durante outra ação não inicia trabalho, não fica pendente e não é executada automaticamente ao liberar a aplicação. A sequência interna de um fluxo, como atualizar e depois consultar ao aplicar filtros, continua pertencendo à mesma solicitação.
+
+Manter a UI responsiva e permitir as interações necessárias para concluir a ação atual, como responder aos seus diálogos. Ao encerrar a ação por sucesso, falha ou cancelamento, encerrar Loading e liberar a aplicação para uma nova solicitação. Cancelar não desfaz etapas já concluídas, conforme OP-07.
+
+O limite funcional e a prevenção de reentrância estão definidos; o mecanismo técnico compartilhado para garanti-los e a escolha de execução em segundo plano permanecem em [P-12](decisoes-e-pendencias.md#p-12). Desabilitar botões isoladamente não garante a regra para as demais entradas. Verificar pelo [ACE-25](criterios-de-aceite.md#ace-25).
+
 <a id="del-01"></a>
 
 ## Exclusão 1: apenas a etiqueta

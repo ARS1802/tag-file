@@ -123,9 +123,11 @@ TagBadge, TagButton, FileItemPanel e classes específicas de diálogo são exemp
 
 ## Durante uma operação: Loading e erros
 
-Apresentar um pop-up Loading durante consultas/operações, bloqueando novas interações conflitantes até o término. Ao concluir ou falhar, encerrar esse estado e apresentar o resultado correspondente.
+Apresentar um pop-up Loading durante consultas/operações. **Apenas uma ação pode estar em andamento em toda a aplicação**, com bloqueio de novas ações nos dois exploradores, inclusive por atalhos e Drop. Manter disponíveis as interações necessárias à ação atual, como seus diálogos de confirmação. Ao encerrar por sucesso, falha ou cancelamento, liberar o estado ocupado e apresentar o resultado correspondente.
 
-SwingWorker é uma alternativa para manter a UI responsiva; a seção de Observer explica EDT e trabalho em segundo plano. A escolha de implementação e a prevenção de tarefas simultâneas/reentrância continuam em P-12. Bloquear cliques não resolve sozinho operações automáticas que já começaram.
+Não há fila nem execução posterior de solicitações bloqueadas. Gatilhos automáticos e chamadas reentrantes respeitam o mesmo limite, conforme [OP-09](requisitos-e-regras.md#op-09). A seleção múltipla prevista pode compor uma única ação.
+
+SwingWorker é uma alternativa para manter a UI responsiva; a seção de Observer explica EDT e trabalho em segundo plano. P-12 mantém aberta a escolha do mecanismo técnico, que deve garantir a execução de uma ação por vez. Bloquear apenas cliques não basta; o controle deve abranger todas as entradas. Verificar pelo [ACE-25](criterios-de-aceite.md#ace-25).
 
 Em falha parcial, a mensagem precisa separar o que foi concluído do que falhou, com detalhes técnicos expansíveis. Por exemplo: o arquivo foi movido, mas o novo caminho não foi salvo no banco. As regras estão em [ERR-01](requisitos-e-regras.md#err-01).
 

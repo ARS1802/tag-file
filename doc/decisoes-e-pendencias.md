@@ -2,7 +2,7 @@
 
 [Índice](README.md) · [Arquitetura](arquitetura-e-padroes.md) · [Ordem de construção](arquitetura-e-padroes.md#orientacao-construcao)
 
-Esta página reúne a decisão encerrada DEC-01 e as escolhas ainda abertas em P-01 a P-13. As regras definidas continuam válidas enquanto a equipe resolve os pontos pendentes.
+Esta página reúne as decisões encerradas DEC-01 e DEC-02 e as escolhas ainda abertas em P-01 a P-13. As regras definidas continuam válidas enquanto a equipe resolve os pontos pendentes.
 
 ## Como usar esta página
 
@@ -13,7 +13,7 @@ Os grupos P-01 a P-13 continuam abertos. Eles misturam assuntos com impactos dif
 | Resultado de uma ação do usuário | P-01, P-02, P-03, P-13 | Antes de concluir a funcionalidade afetada e seu critério de aceite. |
 | Contrato entre componentes | P-04, P-05 e partes de P-12 | Antes de integrar UI, Controllers, consultas e avisos. |
 | Dados e regras de validação | P-06 a P-10 | Antes de fixar schema e validações que dependem dessas escolhas. |
-| Preparação e execução | P-11 e partes de P-12 | Antes de integrar os scripts e operações simultâneas. |
+| Preparação e execução | P-11 e partes de P-12 | Antes de integrar os scripts e o mecanismo de execução de uma ação por vez. |
 
 Uma pendência pode afetar mais de uma área. Nomear uma tabela e decidir como reconhecer caminhos equivalentes são escolhas de pesos diferentes; os grupos permitem localizar as partes afetadas.
 
@@ -26,6 +26,16 @@ Uma pendência pode afetar mais de uma área. Nomear uma tabela e decidir como r
 Os Controllers chamam diretamente os Managers/Services responsáveis. LocalFileManager coordena registros, NativeFileService manipula arquivos físicos, DAOs persistem dados e Controllers publicam alterações por ExplorerEventService.
 
 As funcionalidades de mover, copiar, recortar, colar, renomear e excluir permanecem. A retirada não será compensada com um Manager por antigo comando nem com outro padrão adicional. A possibilidade de comentar Undo/Redo futuro não reintroduz Command.
+
+<a id="dec-02"></a>
+
+## Decisão encerrada: uma ação por vez
+
+**DEC-02 está definida e encerrada.** A aplicação executa apenas uma ação por vez, com limite compartilhado pelos dois exploradores. Novas solicitações durante uma ação são bloqueadas, inclusive as automáticas e reentrantes. Não há fila de ações nem sequências de operações armazenadas para execução posterior.
+
+Uma ação pode conter várias etapas e a seleção múltipla já prevista na associação inicial. A UI permanece responsiva e permite os diálogos da ação atual. Ao encerrar por sucesso, falha ou cancelamento, a aplicação libera a execução de uma nova ação, sem disparar automaticamente solicitações bloqueadas.
+
+O comportamento está em [OP-09](requisitos-e-regras.md#op-09) e será verificado por [ACE-25](criterios-de-aceite.md#ace-25). O mecanismo técnico permanece em P-12; a exclusividade global já é requisito. Essa escolha mantém os objetivos atuais, sem reintroduzir Command ou Undo/Redo nesta versão.
 
 <a id="p-01"></a>
 
@@ -141,11 +151,11 @@ As funcionalidades de mover, copiar, recortar, colar, renomear e excluir permane
 
 ## P-12 — Lotes, clipboard e execução da UI
 
-**Definido:** seleção múltipla no fluxo inicial de associação, clipboard interno COPY/CUT compartilhado, pop-up Loading para bloquear interações conflitantes e intenção de visões lado a lado.
+**Definido:** seleção múltipla no fluxo inicial de associação, clipboard interno COPY/CUT compartilhado, intenção de visões lado a lado e apenas uma ação em andamento em toda a aplicação, conforme [DEC-02](#dec-02)/[OP-09](requisitos-e-regras.md#op-09). Loading acompanha a ação; novas ações são bloqueadas nos dois exploradores, inclusive chamadas automáticas e reentrantes, sem fila ou sequências armazenadas.
 
-**A decidir:** seleção múltipla geral, ordem/continuidade de lotes com falha, representação do clipboard e seu estado após colagem, repetição de CUT, histórico/persistência do clipboard, prevenção de reentrância, coordenação de operações simultâneas e arranjo lado a lado. SwingWorker permanece alternativa de implementação.
+**A decidir:** seleção múltipla geral, ordem/continuidade de lotes com falha, representação do clipboard e seu estado após colagem, repetição de CUT, histórico/persistência do clipboard e arranjo lado a lado. Também falta escolher o mecanismo compartilhado de controle da ação em andamento e de execução em segundo plano; SwingWorker permanece alternativa de implementação. Histórico do clipboard não autoriza uma fila de ações.
 
-**Impacto:** UI, Controllers, conexão compartilhada e operações físicas. Bloquear cliques não define sozinho a coordenação interna.
+**Impacto:** UI, Controllers, conexão compartilhada e operações físicas. O mecanismo deve garantir OP-09 para todas as entradas; bloquear apenas cliques não impede outras solicitações. Manter a UI responsiva não autoriza executar outra ação em paralelo.
 
 <a id="p-13"></a>
 

@@ -1,22 +1,27 @@
 %% Fluxo de usuário — UC-14: atualização compartilhada, filtros e notificações.
-%% Fontes: doc/casos-de-uso.md:L233-L245; doc/requisitos-e-regras.md:L248-L288.
-%% [NEEDS INVESTIGATION] P-10: metadados ausentes; P-12: coordenação de tarefas.
+%% Fontes: doc/casos-de-uso.md:L235-L247; doc/requisitos-e-regras.md:L264-L304.
+%% Regra de entrada: doc/requisitos-e-regras.md#op-09; verificação: doc/criterios-de-aceite.md#ace-25.
+%% [NEEDS INVESTIGATION] P-10: metadados ausentes; P-12: mecanismo técnico da execução exclusiva.
 flowchart TD
     button(["Clicar no único botão Refresh"])
     tab(["Trocar de aba"])
     filter(["Aplicar filtros"])
-    loading["Mostrar Loading e bloquear<br>novas interações conflitantes"]
+    admission{"Nenhuma ação em andamento<br>na aplicação?"}
+    blocked(["Bloquear nova solicitação<br>Sem fila nem execução posterior"])
+    loading["Iniciar ação e mostrar Loading<br>Bloquear novas ações nas duas visões"]
     refresh["Atualizar disponibilidade e metadados<br>de todos os LocalFile uma vez"]
     success{"Atualização concluída?"}
     query{"Há consulta ou filtro solicitado?"}
     execute["Executar a consulta pretendida"]
     presentations["Atualizar o que as duas visões mostram"]
-    done(["Encerrar Loading e continuar usando"])
-    failure[["Encerrar Loading e explicar a falha<br>11-falhas"]]
+    done(["Encerrar Loading e liberar a ação"])
+    failure[["Explicar a falha e liberar a ação<br>11-falhas"]]
     rule["Avisos do Observer não disparam outro Refresh.<br>Refresh não executa limpeza da inicialização.<br>Navegação de pasta não é Refresh global."]
-    button --> loading
-    tab --> loading
-    filter --> loading
+    button --> admission
+    tab --> admission
+    filter --> admission
+    admission -->|"Sim"| loading
+    admission -->|"Não"| blocked
     loading --> refresh --> success
     success -->|"Sim"| query
     success -->|"Não / resultado parcial"| failure
@@ -31,6 +36,6 @@ flowchart TD
     classDef success fill:#a7f3d0,stroke:#047857,color:#374151
     classDef error fill:#fecaca,stroke:#b91c1c,color:#374151
     class button,tab,filter trigger
-    class success,query decision
+    class admission,success,query,blocked decision
     class done success
     class failure error

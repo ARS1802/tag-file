@@ -1,7 +1,8 @@
 %% Sequência entre classes — uma atualização global, várias apresentações avisadas.
-%% Fontes: doc/arquitetura-e-padroes.md:L38-L64, L194-L204; doc/casos-de-uso.md:L233-L245.
-%% [NEEDS INVESTIGATION] P-04/P-05: observadores/avisos; P-10/P-12: dados e execução.
-%% Cenário de sucesso; falhas retornam pelo fluxo de usuário 11-falhas.
+%% Fontes: doc/arquitetura-e-padroes.md:L38-L64, L196-L206; doc/casos-de-uso.md:L235-L247.
+%% Regra de entrada: doc/requisitos-e-regras.md#op-09; verificação: doc/criterios-de-aceite.md#ace-25.
+%% [NEEDS INVESTIGATION] P-04/P-05: observadores/avisos; P-10/P-12: dados e mecanismo de execução exclusiva.
+%% Admissão da ação e cenário de sucesso; falhas retornam pelo fluxo de usuário 11-falhas.
 sequenceDiagram
     autonumber
     participant screen as Screen solicitante
@@ -13,7 +14,10 @@ sequenceDiagram
     participant observers as Objetos ExplorerListener
 
     screen->>controller: Refresh, troca de aba ou aplicação de filtros
-    Note over screen,controller: Mostrar Loading e bloquear novas interações conflitantes
+    break Outra ação em andamento em qualquer explorador
+        controller-->>screen: Bloquear solicitação, sem fila nem execução posterior
+    end
+    Note over screen,controller: Iniciar ação sob controle compartilhado.<br>Mostrar Loading e bloquear novas ações nas duas visões.
     controller->>manager: Coordenar uma atualização global (refreshAll)
     manager->>dao: Carregar todos os LocalFile
     dao-->>manager: Cadastros conhecidos
@@ -31,5 +35,5 @@ sequenceDiagram
     loop Para cada objeto interessado inscrito
         events->>observers: Chamar pelo contrato ExplorerListener
     end
-    Note over events,observers: Atualizar a apresentação sem chamar outro refreshAll.<br>Observer não transfere automaticamente o callback para a EDT.<br>P-12: mecanismo de execução e coordenação ainda aberto.
-    controller-->>screen: Concluir solicitação e encerrar Loading
+    Note over events,observers: Atualizar a apresentação sem chamar outro refreshAll.<br>Observer não transfere automaticamente o callback para a EDT.<br>P-12: mecanismo técnico para garantir uma ação por vez ainda aberto.
+    controller-->>screen: Concluir solicitação, encerrar Loading<br>e liberar o controle compartilhado
