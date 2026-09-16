@@ -2,7 +2,7 @@
 
 [Índice](README.md) · [Casos de uso](casos-de-uso.md) · [Ordem de construção](arquitetura-e-padroes.md#orientacao-construcao)
 
-Um critério de aceite descreve uma situação e o resultado que a funcionalidade precisa produzir. Os 25 cenários abaixo estão previstos para validação após a implementação; não representam testes já executados nem uma rubrica adicional da disciplina.
+Um critério de aceite descreve uma situação e o resultado que a funcionalidade precisa produzir. Os 25 cenários abaixo definem o comportamento esperado. Os resultados efetivamente executados e suas limitações estão na [matriz de verificação](verificacao.md); esta lista não é uma rubrica adicional da disciplina.
 
 Para cada cenário, prepare a condição, execute a ação e compare o resultado. Registre a evidência quando fizer a verificação. Se houver uma pendência indicada, seu resultado completo depende da decisão correspondente.
 
@@ -192,7 +192,7 @@ Para cada cenário, prepare a condição, execute a ação e compare o resultado
 - **Condição:** Tag cujos arquivos também possuem outras Tags.
 - **Ação:** Escolher entre as três modalidades e observar informações e confirmações.
 - **Resultado esperado:** A UI distingue as três exclusões e alerta sobre outras Tags afetadas.
-- **Limites e consequências:** [P-02](decisoes-e-pendencias.md#p-02) impede fechar o resultado completo da modalidade 2: remoção imediata ou adiamento e destino da Tag selecionada. Estão definidos preservar o disco e não apagar globalmente outras Tags. Predefinidas comuns exigem reforço; sentinela não pode ser excluída.
+- **Limites e consequências:** P-02 foi confirmado: modalidade 2 remove imediatamente cadastros/vínculos e exclui a Tag selecionada. Estão definidos preservar o disco e não apagar globalmente outras Tags. Predefinidas comuns exigem reforço; sentinela não pode ser excluída.
 
 <a id="ace-20"></a>
 
@@ -202,7 +202,7 @@ Para cada cenário, prepare a condição, execute a ação e compare o resultado
 - **Condição:** Arquivo a copiar, com destino escolhido e eventual conflito.
 - **Ação:** Copiar/colar e observar a pergunta sobre herdar Tags e as escolhas de conflito.
 - **Resultado esperado:** Copiar pergunta sobre herdar Tags; a origem permanece. O resultado SQL completo depende de P-01.
-- **Limites e consequências:** [P-01](decisoes-e-pendencias.md#p-01) impede fechar UUID/associações na substituição e cadastro de cópia sem Tags. A origem física permanece; não aplicar resultado de movimento à cópia nem prometer reversão de etapas concluídas.
+- **Limites e consequências:** P-01 foi confirmado: novo UUID para cópia cadastrada, remoção do cadastro anterior do destino e cópia sem herança apenas nativa. A origem física permanece; não aplicar resultado de movimento à cópia nem prometer reversão de etapas concluídas.
 
 <a id="ace-21"></a>
 
@@ -256,4 +256,4 @@ Para cada cenário, prepare a condição, execute a ação e compare o resultado
 
 ## Verificação das sugestões de etiquetas
 
-Ao implementar a sugestão de predefinidas, conferir a criação de LocalFile, a opção de silenciar perguntas na sessão e a volta da pergunta na próxima abertura. O efeito automático dentro da sessão e a escolha entre várias predefinidas compatíveis dependem de [P-03](decisoes-e-pendencias.md#p-03). Esses resultados ainda não estão fechados.
+Conferir a criação de LocalFile, a opção de silenciar perguntas na sessão e a volta da pergunta na próxima abertura. Conforme [P-03](decisoes-e-pendencias.md#p-03), silenciar não classifica automaticamente e todas as predefinidas compatíveis são oferecidas para escolher uma. A evidência executada está em [verificação](verificacao.md).

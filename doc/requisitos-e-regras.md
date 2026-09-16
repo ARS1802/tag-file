@@ -2,7 +2,7 @@
 
 [Índice](README.md) · [Casos de uso](casos-de-uso.md) · [Critérios de aceite](criterios-de-aceite.md)
 
-Esta página é a referência do comportamento a implementar. Arquivo físico, cadastro LocalFile e associação com Tag têm efeitos distintos. As situações que ainda exigem escolha remetem a [P-01 a P-13](decisoes-e-pendencias.md).
+Esta página é a referência do comportamento a implementar. Arquivo físico, cadastro LocalFile e associação com Tag têm efeitos distintos. Os contratos antes abertos em P-01 a P-13 estão resolvidos no [registro desta implementação](decisoes-implementacao.md).
 
 <a id="tag-01"></a>
 
@@ -50,7 +50,7 @@ jpeg → .jpeg
 CDR → .cdr
 ```
 
-As extensões são normalizadas em minúsculas e com ponto inicial. A combinação Tag/extensão não se repete; Tags diferentes podem aceitar a mesma extensão. Coleção vazia e nulabilidade da API ainda não estão totalmente definidas. Não há enumeração obrigatória de categorias IMAGE/AUDIO/VIDEO nem classe FileType obrigatória.
+As extensões são normalizadas em minúsculas e com ponto inicial. A combinação Tag/extensão não se repete; Tags diferentes podem aceitar a mesma extensão. Coleção vazia aceita qualquer extensão; coleção ou elemento nulo é recusado. A string vazia dentro do conjunto representa arquivos sem extensão, conforme [P-08](decisoes-implementacao.md). Não há enumeração obrigatória de categorias IMAGE/AUDIO/VIDEO nem classe FileType obrigatória.
 
 <a id="ext-02"></a>
 
@@ -74,7 +74,7 @@ Avaliar a compatibilidade contra o **conjunto final** de extensões. Se arquivos
 
 Exemplo: Faculdade aceita .pdf e .docx. Ao passar a aceitar apenas .docx, prova.pdf perde sua associação com Faculdade somente após confirmação. As outras Tags e o arquivo físico são preservados. Se essa era a última Tag normal, aplica-se Etiqueta Ausente.
 
-Remover a última extensão configurada deixa a Tag sem restrição. Passar de uma Tag livre para uma lista específica pode tornar arquivos incompatíveis e exige a mesma verificação. O tratamento detalhado por lote permanece aberto.
+Remover a última extensão configurada deixa a Tag sem restrição. Passar de uma Tag livre para uma lista específica pode tornar arquivos incompatíveis e exige a mesma verificação. O conjunto afetado é consultado antes da confirmação; se uma etapa falhar, as anteriores permanecem e a falha é informada.
 
 <a id="tag-04"></a>
 
@@ -82,7 +82,7 @@ Remover a última extensão configurada deixa a Tag sem restrição. Passar de u
 
 Ao criar um LocalFile, apresentar a possibilidade de associar uma predefinida compatível. Por exemplo, ao registrar prova.pdf em Faculdade, oferecer também PDF.
 
-Há uma opção equivalente a **Não perguntar novamente nesta sessão**. A supressão acaba na próxima inicialização; não é uma preferência permanente. O efeito nos próximos arquivos — apenas silenciar ou repetir a escolha — está em [P-03](decisoes-e-pendencias.md#p-03). A escolha entre várias predefinidas compatíveis também continua aberta.
+Há uma opção equivalente a **Não perguntar novamente nesta sessão**. A supressão acaba na próxima inicialização; não é uma preferência permanente. O efeito confirmado em P-03 é apenas silenciar, sem classificação automática. Todas as predefinidas compatíveis são oferecidas para escolher uma.
 
 Não existe classificação automática obrigatória geral nem reclassificação automática a cada mudança de extensão.
 
@@ -141,7 +141,7 @@ Antes de usar um arquivo cadastrado em uma operação, verificar sua disponibili
 
 Localizar permite informar o caminho correspondente, preservando UUID e associações. Se esse caminho já pertencer a outro LocalFile, há uma colisão a resolver em P-08; não há mesclagem automática definida.
 
-Remover do Tag-File preserva o conteúdo físico; seu alcance imediato deve ser resolvido com P-02. Abrir o arquivo na aplicação associada faz parte do fluxo de utilização, mas a API Java concreta ainda não foi escolhida.
+Remover do Tag-File preserva o conteúdo físico e remove imediatamente o cadastro e todos os seus vínculos, conforme P-02 confirmado. Abrir o arquivo na aplicação associada usa `Desktop.OPEN`, quando suportado pelo ambiente.
 
 <a id="op-03"></a>
 
@@ -159,7 +159,7 @@ Arquivos sem LocalFile também podem ser manipulados na visão local, sem cadast
 
 Copiar cria outro arquivo físico e mantém a origem. A UI pergunta se a cópia receberá as Tags do original.
 
-Dois arquivos registrados em caminhos distintos precisam ser distinguíveis. O UUID e as associações que sobrevivem na substituição de um destino já cadastrado estão em [P-01](decisoes-e-pendencias.md#p-01). Também está aberta a escolha entre cópia sem Tags apenas nativa ou cadastro temporário em Etiqueta Ausente.
+Dois arquivos registrados em caminhos distintos precisam ser distinguíveis. Em P-01 foi confirmado: cópia cadastrada recebe novo UUID; substituir remove o cadastro anterior do destino, preservando a origem. Sem herança de Tags, a cópia permanece apenas nativa.
 
 Copiar não altera a origem como se fosse mover. Esses efeitos definidos não estabelecem a ordem completa das confirmações e das etapas de execução.
 
@@ -183,7 +183,7 @@ Oferecer **Substituir**, **Manter os dois** ou **Cancelar**, conforme aplicável
 
 | Alternativa | Efeito e limite |
 |---|---|
-| Substituir | Sobrescreve fisicamente o destino. Em cópia, UUID e associações dependem de P-01. |
+| Substituir | Sobrescreve fisicamente o destino. Em cópia, remove o cadastro anterior e cria outro UUID somente se a herança for confirmada, conforme P-01. |
 | Manter os dois | Preserva os arquivos em caminhos distintos. prova (1).pdf é exemplo, não algoritmo final de nomes. |
 | Cancelar | Não autoriza a ação conflitante ainda não executada. |
 
@@ -201,7 +201,7 @@ Cancelar antes da confirmação impede aquela ação. Não desfaz etapas já con
 
 ClipboardService é compartilhado pelos exploradores e guarda a intenção COPY ou CUT usada na colagem. Deve atender arquivos com e sem cadastro, conservando a relação com LocalFile quando houver.
 
-A representação interna, comportamento após colar, repetição de CUT, histórico e persistência entre execuções não estão definidos. [P-12](decisoes-e-pendencias.md#p-12) reúne esses contratos. A integração com o clipboard do sistema operacional é apenas uma evolução comentada.
+O clipboard guarda um arquivo, com UUID quando cadastrado. COPY permanece após colar; CUT é limpo após sucesso completo. Não há histórico nem persistência entre execuções. [P-12](decisoes-e-pendencias.md#p-12) reúne esses contratos. A integração com o clipboard do sistema operacional é apenas uma evolução comentada.
 
 <a id="op-09"></a>
 
@@ -241,7 +241,7 @@ O efeito originalmente definido retira os LocalFile atingidos e todas as suas as
 
 Exemplo: prova.pdf tem Faculdade, PDF e Importante. A modalidade 2 aplicada a Faculdade retira as classificações do cadastro atingido; os demais arquivos classificados como PDF ou Importante continuam preservados.
 
-**P-02 permanece aberta:** decidir se os registros são removidos imediatamente ou ficam temporariamente na sentinela, e se a Tag selecionada também é excluída ou permanece vazia.
+**P-02 confirmado:** remover imediatamente os cadastros atingidos e seus vínculos, e excluir a Tag selecionada. O disco e as outras Tags permanecem. Reorganização comum continua usando a sentinela temporariamente.
 
 <a id="del-03"></a>
 

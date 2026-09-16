@@ -28,3 +28,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Recursos locais da instância exclusiva e dependências distribuídas separadamente.
+database/runtime/
+database/config/database.properties
+lib/*.jar

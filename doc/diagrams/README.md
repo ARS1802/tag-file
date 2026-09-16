@@ -2,7 +2,7 @@
 
 Comece pelos quatro diagramas principais. Os fluxos maiores possuem detalhes separados para permitir acompanhar uma ação por vez. Cada arquivo `.mmd` é editável e tem uma versão `.svg` para abrir e ampliar no navegador.
 
-Os desenhos representam a **especificação planejada**, conforme [doc/README.md:L7-L9](../README.md#doc-01). As fontes e os trechos que sustentam cada desenho estão nos comentários `%%` de seu arquivo Mermaid. As relações descrevem responsabilidades documentadas; mensagens de sequência não estabelecem assinaturas Java definitivas.
+Os desenhos preservam a **especificação planejada da revisão original**, anterior ao código desta entrega. Alternativas marcadas como abertas nesses artefatos foram resolvidas no [registro atual](../decisoes-implementacao.md); as referências com números de linha também pertencem à revisão original. As fontes e os trechos que sustentam cada desenho estão nos comentários `%%` de seu arquivo Mermaid. As relações descrevem responsabilidades documentadas; mensagens de sequência não estabelecem assinaturas Java definitivas.
 
 | Tipo solicitado | Visualização | Fonte Mermaid | O que observar |
 |---|---|---|---|
@@ -26,7 +26,7 @@ No MER, `PK` identifica a entidade, `FK` referencia outra entidade e `UK` indica
 
 As informações do domínio também estão cobertas quando não viram uma coluna escalar: `nativeFile` fornece a referência de caminho representada por `path`; a coleção de Tags é representada por `LOCAL_FILE_TAG`; a coleção de extensões fica em `EXTENSOES_DA_TAG`. A quantidade de disponíveis é **calculada por consulta**, aparece como informação derivada no DER e não é uma coluna de `TAG`. NativeFile e NativeDirectory não exigem tabelas próprias. [doc/modelo-de-dominio.md:L13-L19](../modelo-de-dominio.md#dom-01), [doc/modelo-de-dominio.md:L70-L100](../modelo-de-dominio.md#dom-03), [doc/banco-de-dados.md:L118-L124](../banco-de-dados.md#sql-06).
 
-**[NEEDS INVESTIGATION] P-06/P-07:** `name` e `extension` constam no inventário porque são informações necessárias, mas persistir cada uma em coluna própria ainda depende de decisão. Também estão abertos os tipos físicos, nulabilidade, índices, chaves das tabelas de vínculo, cascatas, nome definitivo da tabela de extensões e identificação técnica da sentinela. Os diagramas não acrescentam um campo de sistema nem escolhem uma chave composta. [doc/decisoes-e-pendencias.md:L90-L108](../decisoes-e-pendencias.md#p-06).
+**P-06/P-07 resolvidos após estes desenhos:** nome/extensão de arquivo são derivados do Path; UUIDs são CHAR(36), vínculos usam chaves compostas e cascatas, e TAG_EXTENSION guarda as restrições. A sentinela usa UUID fixo. O schema executável em `database/schema` e o [registro atual](../decisoes-implementacao.md) descrevem os detalhes finais.
 
 ## Percursos do usuário
 
@@ -48,7 +48,7 @@ Todos os percursos respeitam [OP-09](../requisitos-e-regras.md#op-09): apenas um
 | Refresh compartilhado | [10-refresh](fluxo-usuario/10-refresh.mmd) | [SVG](svg/fluxo-usuario/10-refresh.svg) | [UC-14](../casos-de-uso.md#uc-14): uma atualização por solicitação, sem limpeza de cadastros. |
 | Falhas | [11-falhas](fluxo-usuario/11-falhas.mmd) | [SVG](svg/fluxo-usuario/11-falhas.svg) | [UC-15](../casos-de-uso.md#uc-15): resultado parcial, detalhes e saída de Loading. |
 
-O percurso de falhas se aplica a todas as etapas falíveis, mesmo quando o desenho de detalhe apresenta somente o caminho nominal. Cancelar impede a ação ainda não confirmada; não desfaz uma etapa concluída. A ordem completa de confirmações e escritas da cópia continua aberta, assim como o resultado final da modalidade 2 de exclusão. [doc/requisitos-e-regras.md:L194-L196](../requisitos-e-regras.md#op-07), [doc/decisoes-e-pendencias.md:L42-L58](../decisoes-e-pendencias.md#p-01).
+O percurso de falhas se aplica a todas as etapas falíveis, mesmo quando o desenho de detalhe apresenta somente o caminho nominal. Cancelar impede a ação ainda não confirmada; não desfaz uma etapa concluída. Os desenhos preservam a revisão original do planejamento, incluindo alternativas então abertas. P-01/P-02 foram resolvidos: cópia com herança recebe UUID novo e substitui o cadastro do destino; modalidade 2 remove imediatamente os cadastros atingidos e a Tag selecionada. Consulte o [registro atual](../decisoes-implementacao.md) para esses contratos.
 
 ## Colaboração entre classes
 
@@ -62,7 +62,7 @@ O diagrama principal apresenta as dependências mais relevantes; ele não preten
 | Preparação do banco e da sessão | [04-ambiente](fluxo-classes/04-ambiente.mmd) | [SVG](svg/fluxo-classes/04-ambiente.svg) | [doc/instalacao-e-execucao.md:L111-L168](../instalacao-e-execucao.md#amb-04) |
 | Factory, composição, DAO e filtros | [05-contratos-e-criacao](fluxo-classes/05-contratos-e-criacao.mmd) | [SVG](svg/fluxo-classes/05-contratos-e-criacao.svg) | [doc/arquitetura-e-padroes.md:L103-L140](../arquitetura-e-padroes.md#arq-02), [doc/interface-e-fluxos.md:L63-L96](../interface-e-fluxos.md#exp-02) |
 
-`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes de referência da documentação, e os parênteses no desenho não fixam métodos sem parâmetros. A proposta de Screens observadoras e os dados enviados nos avisos dependem de P-04/P-05. As chamadas diretas entre Controllers e colaboradores seguem a decisão encerrada DEC-01. [doc/arquitetura-e-padroes.md:L52-L56](../arquitetura-e-padroes.md#arq-06), [doc/arquitetura-e-padroes.md:L97-L99](../arquitetura-e-padroes.md#arq-07), [doc/decisoes-e-pendencias.md:L22-L28](../decisoes-e-pendencias.md#dec-01).
+`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes ilustrativos da revisão original; não fixam assinaturas. A implementação usa Panels observadores e fotografias imutáveis, conforme P-04/P-05. As chamadas diretas seguem DEC-01. A tabela [tipo → arquivo → exemplo](../implementacao.md) aponta para as APIs e demonstrações efetivas.
 
 ## Registro da verificação original
 

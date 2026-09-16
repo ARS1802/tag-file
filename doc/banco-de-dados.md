@@ -2,7 +2,7 @@
 
 [Índice](README.md) · [Modelo de domínio](modelo-de-dominio.md) · [DAOs](arquitetura-e-padroes.md#arq-04) · [Ambiente](instalacao-e-execucao.md)
 
-O MySQL guarda o que o Tag-File conhece sobre arquivos e etiquetas. O conteúdo de prova.pdf permanece no disco. Esta página apresenta o **modelo lógico**, isto é, quais dados se relacionam. O DDL — comandos que criarão as tabelas com tipos, chaves e índices — continua parcialmente aberto em P-06.
+O MySQL guarda o que o Tag-File conhece sobre arquivos e etiquetas. O conteúdo de prova.pdf permanece no disco. Esta página apresenta o **modelo lógico**, isto é, quais dados se relacionam. O DDL implementado está em `database/schema`; suas escolhas estão registradas em [P-06](decisoes-implementacao.md).
 
 <a id="sql-01"></a>
 
@@ -13,7 +13,8 @@ O MySQL guarda o que o Tag-File conhece sobre arquivos e etiquetas. O conteúdo 
 | LOCAL_FILE | Cadastros de arquivos, identidade, caminho e metadados. |
 | TAG | Etiquetas e seus dados próprios. |
 | LOCAL_FILE_TAG | Associações entre cadastros de arquivos e etiquetas. |
-| Tabela de extensões da Tag | Extensões permitidas por etiqueta. O nome TAG_EXTENSION ou TAG_EXTENSIONS ainda precisa ser escolhido; haverá uma tabela para esse papel. |
+| TAG_EXTENSION | Extensões permitidas por etiqueta, com chave composta de UUID da Tag e extensão. |
+| APP_METADATA | Marcador de conclusão da carga inicial de predefinidas; não é histórico de schema. |
 
 Não há tabelas próprias obrigatórias para NativeFile, NativeDirectory, conteúdo dos arquivos, histórico de versões ou usuários do aplicativo.
 
@@ -66,24 +67,24 @@ Cada associação referencia um arquivo e uma Tag. EXTENSOES_DA_TAG é o rótulo
 | Extensão não tem UUID próprio. | A linha precisa identificar sua Tag e a extensão permitida. |
 | A combinação Tag/extensão é única. | Evita repetir .pdf na mesma Tag; outras Tags também podem aceitar .pdf. |
 
-Chave primária identifica uma linha; chave estrangeira referencia outra entidade. Chaves compostas, como o par Tag/extensão ou arquivo/Tag, são formas possíveis de representar vínculos. A escolha concreta do DDL permanece em P-06. A mesma associação não cria outro LocalFile, e a pesquisa não duplica o cadastro por corresponder a várias Tags.
+Chave primária identifica uma linha; chave estrangeira referencia outra entidade. Os pares Tag/extensão e arquivo/Tag são chaves primárias compostas. A mesma associação não cria outro LocalFile, e a pesquisa não duplica o cadastro por corresponder a várias Tags.
 
-Unicidade de caminho depende de sua representação e comparação entre plataformas. Normalização, links e collation precisam ser tratados em [P-06](decisoes-e-pendencias.md#p-06) e [P-08](decisoes-e-pendencias.md#p-08).
+Unicidade de caminho usa texto absoluto normalizado lexicalmente e comparação binária. Aliases, hard links e diferenças de caixa no sistema de arquivos não são fundidos automaticamente. Os limites dessa escolha estão em [P-06](decisoes-e-pendencias.md#p-06) e [P-08](decisoes-e-pendencias.md#p-08).
 
 <a id="sql-03"></a>
 
 ## Tipos e armazenamento físico
 
-| Informação | Já definido | Escolha ainda aberta |
+| Informação | Contrato | Representação implementada |
 |---|---|---|
-| UUID | Tipo Java e identidade por ID. | CHAR(36), BINARY(16) ou representação SQL a escolher. |
-| Caminho | Persistido, único e mutável. | Tipo, comprimento, índice, normalização e collation. |
-| Nome e extensão do arquivo | Informações do arquivo. | Obtenção a partir de Native e armazenamento em colunas separadas. |
-| Tamanho | Informação necessária. | long/BIGINT em bytes são propostas de representação. |
-| Disponibilidade | Valor lógico conhecido. | DDL, nulabilidade e valor inicial. |
-| Datas | LocalDateTime em Java e DATETIME em MySQL. | Precisão, ausência de valor e conversão de fuso. |
-| Nome e cor da Tag | Nome repetível; cor hexadecimal. | Limites, validações, padrão e formato completo. |
-| Extensões permitidas | Normalizadas e únicas por Tag. | Comprimento e tratamento de nomes especiais/compostos. |
+| UUID | Tipo Java e identidade por ID. | CHAR(36), ASCII binário. |
+| Caminho | Persistido, único e mutável. | VARCHAR(700), UNIQUE, utf8mb4_0900_bin. |
+| Nome e extensão do arquivo | Informações do arquivo. | Derivados do Path, sem colunas separadas. |
+| Tamanho | Bytes conhecidos. | Long/BIGINT anulável, nunca negativo. |
+| Disponibilidade | Valor lógico conhecido. | BOOLEAN NOT NULL, informado na gravação. |
+| Datas | LocalDateTime em Java e DATETIME em MySQL. | UTC, DATETIME(6); metadados físicos desconhecidos são nulos. |
+| Nome e cor da Tag | Nome repetível; cor hexadecimal. | VARCHAR(100) e CHAR(7), validando nome e #RRGGBB no domínio. |
+| Extensões permitidas | Normalizadas e únicas por Tag. | VARCHAR(64); sufixos compostos aceitos; string vazia indica sem extensão. |
 
 UUID/string, Path/texto e datas Java/SQL são conversões a tratar nos DAOs. Não há ORM ou serialização do objeto inteiro no desenho. Um exemplo como path VARCHAR(1024) UNIQUE não equivale a uma definição validada de coluna e índice.
 
@@ -95,13 +96,13 @@ TagDAO persiste e reconstrói a Tag com suas extensões; a UI não precisa consu
 
 Os efeitos das exclusões seguem [DEL-01 a DEL-04](requisitos-e-regras.md#del-01). Remover um vínculo preserva a Tag e o arquivo, salvo quando outra operação exige sua exclusão. A limpeza da inicialização segue [CIC-02](requisitos-e-regras.md#cic-02).
 
-ON DELETE CASCADE é uma possibilidade técnica ainda não escolhida. Também não há triggers definidos para datas, disponibilidade, contadores ou sentinela. O resultado funcional precisa ser preservado independentemente do mecanismo físico que a equipe vier a escolher.
+ON DELETE CASCADE remove vínculos/extensões quando sua entidade referenciada é excluída; não apaga arquivos físicos nem outras Tags. Não há triggers de produção para datas, disponibilidade, contadores ou sentinela; a coordenação e os DAOs mantêm essas regras. A demonstração de falha usa uma trigger temporária própria, removida ao terminar.
 
 <a id="sql-05"></a>
 
 ## Limite atual: operações podem ficar parciais
 
-A versão não implementará controle explícito de transações. Por isso, não há garantia de que várias alterações SQL sejam concluídas como uma única unidade. Também não há operação atômica garantida entre disco e banco.
+A versão não implementa controle explícito de transações. Por isso, não há garantia de que várias alterações SQL sejam concluídas como uma única unidade. Também não há operação atômica garantida entre disco e banco.
 
 Exemplo: mover o arquivo pode funcionar e salvar o novo caminho pode falhar. O disco já mudou e o cadastro pode conservar o caminho anterior. A aplicação deve explicar o que concluiu e o que falhou, conforme [ERR-01](requisitos-e-regras.md#err-01), sem prometer reversão automática. O estudo de transações é uma possível evolução comentada.
 
@@ -109,17 +110,17 @@ Exemplo: mover o arquivo pode funcionar e salvar o novo caminho pode falhar. O d
 
 ## Criação e alteração do schema
 
-Haverá scripts SQL de criação e alteração das tabelas, acionados pela preparação da aplicação. A tabela schema_history está fora do escopo.
+Os scripts `001-create.sql` e `002-index.sql` são acionados pela preparação da aplicação. A tabela schema_history está fora do escopo.
 
-Verificar a estrutura existente antes de aplicar alterações é uma possibilidade discutida. A estratégia de verificação, reaplicação e recuperação de schema incompleto permanece em [P-11](decisoes-e-pendencias.md#p-11). Não há procedimento definido que apague e recrie as tabelas em cada abertura ou repita ALTER sem conferir seu efeito.
+DatabaseManager verifica colunas, tipos pertinentes, chaves e cascatas antes de prosseguir. Cria tabelas ausentes e só acrescenta o índice adicional quando falta. Estrutura incompatível gera erro e preserva dados, conforme [P-11](decisoes-e-pendencias.md#p-11).
 
 ## Consultas que ligam banco e interface
 
 | Necessidade | Resultado esperado | Limite de contrato |
 |---|---|---|
 | Carregar Tags | Objetos Tag com suas extensões. | TagDAO mantém o tipo de entidade Tag. |
-| Encontrar arquivos por Tags | Cadastros de arquivos que atendem AND/OR, sem duplicação. | A API exata e o encaixe dos filtros estão em P-05. |
-| Mostrar Tags na pasta real | Correspondências em lote, apresentadas como Map<Path, LocalFile>. | Assinatura e normalização das chaves ainda precisam de definição. |
+| Encontrar arquivos por Tags | Cadastros de arquivos que atendem AND/OR, sem duplicação. | LocalFileDAO.find com LocalFileFilter; sem Tags selecionadas retorna todos. |
+| Mostrar Tags na pasta real | Correspondências em lote, apresentadas como Map<Path, LocalFile>. | LocalFileDAO.findByPaths, com caminhos absolutos normalizados lexicalmente. |
 | Contar disponíveis | Quantidade de associados com available = true. | Valor calculado, não contador persistido. |
 | Encontrar Tags vazias | Tags sem associações. | Zero disponíveis não significa Tag vazia; a sentinela continua protegida. |
 

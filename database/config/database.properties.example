@@ -1,0 +1,4 @@
+# Somente a instância didática exclusiva do Tag-File. Não reutilize credenciais pessoais.
+db.url=jdbc:mysql://127.0.0.1:3333/tag_file?autoReconnect=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=15000&allowPublicKeyRetrieval=true&sslMode=DISABLED
+db.user=root
+db.password=TagFile123!

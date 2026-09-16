@@ -4,7 +4,7 @@
 
 Um caso de uso descreve uma ação do usuário, seus passos e o resultado esperado. Use esta página ao construir uma funcionalidade. As regras detalhadas ficam nos links de cada caso.
 
-Arquivo físico, cadastro e associação são diferentes: retirar uma etiqueta não significa apagar o arquivo. Cancelar impede a ação ainda não confirmada, mas não desfaz etapas já concluídas. Alguns contratos e a ordem técnica de certas operações continuam em aberto, conforme indicado.
+Arquivo físico, cadastro e associação são diferentes: retirar uma etiqueta não significa apagar o arquivo. Cancelar impede a ação ainda não confirmada, mas não desfaz etapas já concluídas. Os contratos e a ordem técnica escolhidos estão no [registro desta implementação](decisoes-implementacao.md), que resolve as alternativas históricas de P-01 a P-13 mencionadas nesta página.
 
 As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertura completa. As regras e pendências continuam sendo a referência para o restante do comportamento.
 
@@ -14,7 +14,7 @@ As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertu
 
 ## UC-01 — Preparar e abrir o Tag-File
 
-**Regras:** [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-06](instalacao-e-execucao.md#amb-06), [CIC-02](requisitos-e-regras.md#cic-02), [SYN-01](requisitos-e-regras.md#syn-01). Os comandos específicos ainda precisam ser definidos.
+**Regras:** [AMB-01](instalacao-e-execucao.md#amb-01) a [AMB-06](instalacao-e-execucao.md#amb-06), [CIC-02](requisitos-e-regras.md#cic-02), [SYN-01](requisitos-e-regras.md#syn-01). Os comandos reproduzíveis estão no [guia da implementação](implementacao.md).
 
 **Gatilho:** abertura do aplicativo.
 
@@ -106,7 +106,7 @@ As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertu
 
 **Efeitos:** o arquivo físico continua intacto e o registro continua acessível durante a sessão. Receber uma nova Tag normal retira a sentinela.
 
-**Limite:** a remoção explícita de todos os registros tem seu alcance pendente em [P-02](decisoes-e-pendencias.md#p-02).
+**Limite:** a remoção explícita retira imediatamente o cadastro e todos os seus vínculos, preservando o arquivo físico e as Tags, conforme [P-02](decisoes-e-pendencias.md#p-02).
 
 **Verificação relacionada:** [ACE-10](criterios-de-aceite.md#ace-10): retirada da última Tag normal durante a reorganização.
 
@@ -138,7 +138,7 @@ As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertu
 
 **Efeitos definidos:** a origem física permanece. Uma cópia bem-sucedida produz outro arquivo físico. Substituir sobrescreve fisicamente o destino; Manter os dois conserva caminhos distintos.
 
-**Decisões abertas:** a identidade e as associações que sobrevivem na substituição e o cadastro de cópia sem Tags permanecem em [P-01](decisoes-e-pendencias.md#p-01). A ordem completa das confirmações e da execução ainda precisa ser definida; a lista de efeitos acima não é uma sequência operacional.
+**Decisão confirmada:** conforme [P-01](decisoes-e-pendencias.md#p-01), a origem permanece, a cópia com herança recebe UUID novo e o cadastro anterior do destino é removido. Sem herança, fica apenas arquivo nativo. As confirmações precedem o disco; depois o Manager sincroniza o SQL, sem prometer atomicidade.
 
 **Cancelamento e falha:** cancelar não autoriza a ação ainda pendente. Não há garantia de desfazer uma etapa já concluída. Em resultado parcial, aplicar [ERR-01](requisitos-e-regras.md#err-01), distinguindo disco e SQL.
 
@@ -207,7 +207,7 @@ As verificações relacionadas conferem aspectos de cada fluxo, não sua cobertu
 | Modalidade | Tag selecionada | Associações | LocalFile | Arquivo físico |
 |---|---|---|---|---|
 | Apenas a etiqueta | Excluir | Retirar apenas as dessa Tag | Preservar; aplicar `Etiqueta Ausente` se perder a última normal | Preservar |
-| Todas as etiquetas dos arquivos da selecionada | Pendente se exclui ou fica vazia | Originalmente: remover todas dos registros atingidos | Originalmente: excluir; conflito de adiamento em [P-02](decisoes-e-pendencias.md#p-02) | Preservar |
+| Todas as etiquetas dos arquivos da selecionada | Excluir | Remover todas dos registros atingidos | Excluir imediatamente, conforme P-02 confirmado | Preservar |
 | Arquivos permanentemente | Excluir | Remover todas dos registros atingidos | Excluir | Apagar permanentemente |
 
 Antes de afetar outras Tags por remoção de registro/arquivo, listar essas etiquetas e pedir confirmação adicional. Para predefinidas comuns, reforçar a confirmação. A Tag protegida não pode ser excluída.

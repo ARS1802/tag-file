@@ -18,7 +18,7 @@ Uma responsabilidade é o trabalho que uma classe assume. Uma colaboração acon
 | Services | Executar trabalho especializado. | NativeFileService manipula arquivos reais. |
 | DAOs | Ler e gravar dados no SQL. | LocalFileTagDAO persiste uma associação. |
 
-A Screen conhece seus componentes, mas não executa SQL nem operações físicas. O DAO conhece a persistência, mas não manipula arquivos nem publica eventos de UI. Os nomes são grupos de responsabilidade; a capitalização dos pacotes ainda não foi definida.
+A Screen conhece seus componentes, mas não executa SQL nem operações físicas. O DAO conhece a persistência, mas não manipula arquivos nem publica eventos de UI. Os pacotes implementados usam nomes em minúsculas; a organização completa está no [guia](implementacao.md).
 
 <a id="arq-05"></a>
 
@@ -49,7 +49,7 @@ flowchart LR
 
 Inscrever um objeto significa guardar sua referência na lista de interessados. A interface define quais métodos ele precisa oferecer. O serviço usa esse contrato para avisá-lo, sem precisar conhecer seus botões ou sua disposição visual. A chamada recebida é frequentemente chamada de callback.
 
-A proposta existente é que as Screens recebam esses avisos e atualizem a apresentação. A ligação entre Screens e Panels e os parâmetros dos avisos ainda precisam ser definidos em [P-04](decisoes-e-pendencias.md#p-04) e [P-05](decisoes-e-pendencias.md#p-05).
+Os Panels exercem o papel de Screens e implementam ExplorerListener. Recebem fotografias imutáveis já consultadas, incluindo arquivos nativos sem cadastro. Inscrição, remoção e parâmetros estão em [P-04](decisoes-e-pendencias.md#p-04), [P-05](decisoes-e-pendencias.md#p-05) e nos Javadocs.
 
 **Receber o aviso não repete a associação nem inicia outro Refresh global.** O Observer também não vigia o disco continuamente. As verificações de disponibilidade acontecem nos [gatilhos definidos](requisitos-e-regras.md#syn-01).
 
@@ -61,9 +61,9 @@ O listener de um componente encaminha uma solicitação do usuário. O aviso do 
 
 Swing atualiza seus componentes, em geral, na **Event Dispatch Thread (EDT)**. Uma chamada comum de callback executa na thread que a chama; usar Observer não transfere automaticamente o trabalho para a EDT. Operações demoradas nessa thread deixam a interface sem responder. [Política de threads do Swing](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/package-summary.html).
 
-SwingWorker é uma alternativa para realizar trabalho em segundo plano e aplicar o resultado à interface. Sua adoção e o mecanismo de controle da execução continuam em P-12. O comportamento já está definido: apenas uma ação em andamento na aplicação, compartilhada pelos dois exploradores, sem fila, conforme [OP-09](requisitos-e-regras.md#op-09). Trabalho em segundo plano mantém a UI responsiva e não autoriza outra ação simultânea. [API de SwingWorker](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/SwingWorker.html).
+SwingWorker é uma alternativa para trabalho em segundo plano. Nesta implementação, ActionGate admite a solicitação por AtomicBoolean e cria uma thread apenas se estiver livre. Publicações e diálogos passam pela EDT; a ação mantém a posse até terminarem. Isso implementa [OP-09](requisitos-e-regras.md#op-09), sem fila. [API de SwingWorker para comparação](https://docs.oracle.com/en/java/javase/24/docs/api/java.desktop/javax/swing/SwingWorker.html).
 
-O padrão Observer já era usado antes de 2025. As classes java.util.Observable e java.util.Observer foram desaconselhadas desde Java 9 por limitações do modelo de eventos; o JDK 24 mantém essa depreciação. O projeto prevê seu próprio ExplorerListener. [API de Observable](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Observable.html).
+O padrão Observer já era usado antes de 2025. As classes java.util.Observable e java.util.Observer foram desaconselhadas desde Java 9 por limitações do modelo de eventos; o JDK 24 mantém essa depreciação. O projeto usa seu próprio ExplorerListener. [API de Observable](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Observable.html).
 
 <a id="arq-03"></a>
 
@@ -94,7 +94,7 @@ Os dois Controllers devem respeitar o mesmo controle de ação em andamento. Uma
 | LocalFileManager | Coordena disponibilidade, sincronização e ciclo de vida dos cadastros, combinando serviço nativo e DAOs. Não administra o processo MySQL. |
 | ClipboardService | Guarda COPY ou CUT, compartilhado pelos dois exploradores, para a colagem de arquivos com ou sem cadastro. |
 
-Recortar só guarda intenção. Colar consulta o clipboard para executar a ação correspondente. Representação interna, estado após colagem, repetição de CUT e comportamento geral de lotes continuam em [P-12](decisoes-e-pendencias.md#p-12). O clipboard não se integra ao do sistema operacional.
+Recortar só guarda intenção. Colar consulta o clipboard compartilhado de um arquivo. COPY permanece após sucesso; CUT limpa após sucesso completo. Associação em lote para na primeira falha, conforme [P-12](decisoes-e-pendencias.md#p-12). O clipboard não se integra ao do sistema operacional.
 
 refresh/refreshAll são nomes de referência para atualização; cleanupOrphans/cleanupMissingTagFiles, para limpeza. O comportamento a preservar é separar atualização rotineira da limpeza exclusiva da inicialização.
 
@@ -104,9 +104,9 @@ refresh/refreshAll são nomes de referência para atualização; cleanupOrphans/
 
 Uma única Factory cria **Tag e LocalFile**; EntityFactory é o nome de referência. NativeFile e NativeDirectory são instanciados diretamente. Criar LocalFile inclui preparar corretamente sua referência nativa.
 
-A centralização reúne o trabalho pertinente à criação. A divisão exata das validações entre construtor, Factory e serviços ainda precisa ser combinada.
+A centralização reúne o trabalho pertinente à criação. Os construtores validam os dados imutáveis; a Factory gera UUID/datas de entidades novas e obtém metadados físicos pelo serviço; o Manager obtém confirmações e aplica as regras entre entidades.
 
-Ao carregar um cadastro do banco, o objeto conserva seu UUID e suas datas. Gerar outro UUID em cada consulta faria o mesmo cadastro parecer novo. O contrato de reconstrução ainda não está fechado.
+Ao carregar um cadastro do banco, o DAO usa o construtor com UUID e datas persistidos. A Factory só cria entidades novas. Gerar outro UUID em cada consulta faria o mesmo cadastro parecer novo.
 
 Essa é uma **Factory simples**; não está classificada como Factory Method ou Abstract Factory GoF.
 
@@ -131,7 +131,7 @@ LocalFileDAO implements CrudDAO<LocalFile, LocalFileFilter>
 TagDAO       implements CrudDAO<Tag, TagFilter>
 ```
 
-T representa o tipo de entidade, e F o tipo de filtro que deriva de Filter. O contrato contempla criação, consulta por UUID, consulta por filtro, atualização e exclusão. Assinaturas completas, retornos de ausência e exceções ainda precisam ser combinados.
+T representa o tipo de entidade, e F o tipo de filtro que deriva de Filter. O contrato contempla criação, consulta por UUID, consulta por filtro, atualização e exclusão. A interface implementada usa Optional vazio para ausência por UUID, List para consulta por filtro e SQLException para falhas; erros não se tornam resultados vazios.
 
 LocalFileTagDAO é especializado em associar, desassociar e consultar vínculos. Não precisa implementar CrudDAO nem ter um UPDATE sem utilidade. Também não há DAO de extensões separado obrigatório.
 
@@ -151,7 +151,7 @@ Consultar Tags retorna Tags. Pesquisar arquivos por Tags retorna arquivos. O enc
 
 Administrar o servidor e consultar uma tabela são trabalhos diferentes. A aplicação usa a conexão compartilhada, sem pool. Um DAO não deve fechá-la inadvertidamente ao concluir cada chamada.
 
-getConnection e close são nomes de referência para a API. Os procedimentos e versões ainda abertos estão em [ambiente](instalacao-e-execucao.md) e [P-11](decisoes-e-pendencias.md#p-11).
+open, getConnection e close implementam o ciclo explícito da conexão compartilhada. Os procedimentos e versões estão em [ambiente](instalacao-e-execucao.md) e [P-11](decisoes-e-pendencias.md#p-11).
 
 <a id="arq-09"></a>
 
@@ -209,11 +209,11 @@ Uma solicitação admitida pelo controle de [OP-09](requisitos-e-regras.md#op-09
 
 ## Ordem de construção
 
-A sequência abaixo organiza as responsabilidades existentes. Antes de fechar uma integração, combinem os contratos pendentes que afetam suas entradas e resultados.
+A sequência abaixo organiza as responsabilidades existentes. Os contratos usados nesta implementação estão no [registro de decisões](decisoes-implementacao.md); revise-os antes de alterar uma integração.
 
 <a id="bloco-dominio"></a>
 
-1. **Domínio:** representar arquivos, cadastros, Tags e identidade. Começar pelo [modelo](modelo-de-dominio.md) e combinar validações, coleções e reconstrução ainda abertas.
+1. **Domínio:** representar arquivos, cadastros, Tags e identidade. Começar pelo [modelo](modelo-de-dominio.md) e conferir as validações, coleções imutáveis e a reconstrução com identidade preservada.
 
 <a id="bloco-ambiente"></a>
 
@@ -225,11 +225,11 @@ A sequência abaixo organiza as responsabilidades existentes. Antes de fechar um
 
 <a id="bloco-coordenacao"></a>
 
-4. **Coordenação e avisos:** encaminhar ações, acompanhar resultados e publicar alterações. A ligação dos observadores e as assinaturas dependem de P-04/P-05.
+4. **Coordenação e avisos:** encaminhar ações, acompanhar resultados e publicar alterações. A ligação dos observadores e as assinaturas seguem P-04/P-05.
 
 <a id="bloco-interface"></a>
 
-5. **Interface:** apresentar arquivos, Tags, filtros, confirmações e falhas. Conferir as duas visões com dados consistentes; estados vazios e o mecanismo de execução de uma ação por vez dependem de P-12/P-13.
+5. **Interface:** apresentar arquivos, Tags, filtros, confirmações e falhas. Conferir as duas visões com dados consistentes; estados vazios e o mecanismo de execução de uma ação por vez seguem P-12/P-13.
 
 <a id="bloco-operacoes"></a>
 
@@ -237,4 +237,4 @@ A sequência abaixo organiza as responsabilidades existentes. Antes de fechar um
 
 <a id="bloco-verificacao"></a>
 
-7. **Verificação:** usar os [critérios de aceite](criterios-de-aceite.md) relacionados em cada caso de uso. Eles conferem aspectos do comportamento; não substituem a definição dos contratos ainda abertos.
+7. **Verificação:** usar os [critérios de aceite](criterios-de-aceite.md) relacionados em cada caso de uso. Eles conferem aspectos do comportamento; não substituem a leitura dos contratos e dos limites de cada cenário.

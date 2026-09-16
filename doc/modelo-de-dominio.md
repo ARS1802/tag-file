@@ -69,19 +69,19 @@ Normalização de caminhos, diferenças entre plataformas, links e caminhos equi
 
 ## Informações de LocalFile
 
-| Informação | Significado | Representação definida ou pendente |
+| Informação | Significado | Representação implementada |
 |---|---|---|
 | id | Identidade do cadastro. | UUID. |
 | nativeFile | Referência ao caminho do arquivo. | NativeFile. |
-| Nome e extensão | Nome e extensão reais do arquivo. | Obtenção por Native e colunas separadas no SQL ainda não estão totalmente definidas. |
-| Tamanho | Tamanho do arquivo. | long em bytes e BIGINT são propostas; apresentação em MB/MiB ainda aberta. |
+| Nome e extensão | Nome e extensão reais do arquivo. | Derivados de NativeFile; sem colunas duplicadas. |
+| Tamanho | Tamanho do arquivo. | Long/BIGINT em bytes, nulo quando desconhecido. |
 | available | Disponibilidade conhecida no caminho salvo. | boolean. |
 | createdAt | Criação física do arquivo. | LocalDateTime em Java / DATETIME no MySQL. |
 | modifiedAt | Modificação física do arquivo. | LocalDateTime / DATETIME. |
 | lastAccessedAt | Último acesso físico ao arquivo. | LocalDateTime / DATETIME. |
-| Tags | Classificações associadas. | A relação está definida; `Set<Tag>` é uma representação sugerida em memória. |
+| Tags | Classificações associadas. | `Set<Tag>` imutável em memória; relação muitos-para-muitos no SQL. |
 
-As datas acima pertencem ao arquivo físico, não ao momento do cadastro no banco. Valores ausentes, precisão e conversão de fuso são decisões de [P-10](decisoes-e-pendencias.md#p-10). A API completa de atributos, nulabilidade e validações também não está fechada.
+As datas acima pertencem ao arquivo físico, não ao momento do cadastro no banco. A implementação usa UTC com precisão de microssegundos; dados desconhecidos são nulos. Por prudência, criação física em Unix fica nula, sem usar o substituto que a API básica pode fornecer. Os contratos completos estão nos Javadocs e em [P-10](decisoes-e-pendencias.md#p-10).
 
 <a id="dom-04"></a>
 
@@ -122,7 +122,7 @@ flowchart TD
     S -->|"Limpeza na próxima inicialização"| N
     O["Cadastro sem associação"] -->|"Limpeza defensiva na inicialização"| N
     S -->|"Refresh ou reconexão"| S
-    C -.->|"Remoção explícita"| P["P-02: alcance ainda aberto"]
+    C -.->|"Remoção explícita"| P["Remover cadastro e todos os vínculos"]
 ```
 
 A limpeza da inicialização remove os cadastros cuja única Tag é a sentinela e os cadastros sem associações. Preserva arquivos físicos e a Tag protegida. Indisponibilidade, sozinha, não remove um cadastro. O alcance de exclusões explícitas permanece em [P-02](decisoes-e-pendencias.md#p-02).

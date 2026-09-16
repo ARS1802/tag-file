@@ -97,4 +97,4 @@ As limitações de transações e reconexão exigem informar corretamente os res
 | Refresh | Atualização de disponibilidade/metadados, separada da limpeza de inicialização. |
 | Contrato de método | Combinação de entradas, resultado e erros possíveis de um método. |
 
-As escolhas ainda abertas estão em [decisões e pendências](decisoes-e-pendencias.md).
+As escolhas desta versão estão em [decisões da implementação](decisoes-implementacao.md).

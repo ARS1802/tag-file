@@ -13,9 +13,9 @@ A UI permite navegar, classificar e operar sobre arquivos. Esta página começa 
 | **Arquivos Local** | Navega pelas pastas reais e seleciona arquivos. | Sistema de arquivos, enriquecido com as classificações que existem no banco. |
 | **Arquivos por Etiqueta / Arquivos por Tag** | Escolhe etiquetas e encontra arquivos classificados. | Cadastros e associações persistidos. |
 
-Os nomes acima fazem parte do projeto, incluindo Arquivos Local. As visões ficam em abas com JTabbedPane. Também está prevista a possibilidade de exibi-las lado a lado; o arranjo concreto permanece em [P-12](decisoes-e-pendencias.md#p-12).
+Os nomes acima fazem parte do projeto, incluindo Arquivos Local. As visões ficam em abas com JTabbedPane e podem ser exibidas lado a lado com JSplitPane, conforme [P-12](decisoes-e-pendencias.md#p-12).
 
-Os nomes TagExplorerPanel e LocalFileExplorerPanel estão definidos. Screen é o papel de montar a apresentação e encaminhar eventos. Ainda é preciso decidir se cada Panel exerce esse papel ou compõe outra classe visual; essa relação está em [P-04](decisoes-e-pendencias.md#p-04). Não é necessário deduzir duas camadas de UI apenas pela existência dos dois termos.
+TagExplorerPanel e LocalFileExplorerPanel exercem também o papel de Screen: montam a apresentação, recebem avisos por ExplorerListener e encaminham solicitações aos Controllers. Essa escolha está em [P-04](decisoes-e-pendencias.md#p-04).
 
 <a id="ui-02"></a>
 
@@ -33,7 +33,7 @@ foto.png        [Imagens]
 
 As etiquetas aparecem junto do arquivo. Se não houver etiquetas, a região fica em branco. Etiqueta Ausente aparece normalmente quando estiver realmente associada ao cadastro.
 
-Para associar por Drag and Drop, o usuário **solta um arquivo sobre a representação de uma Tag**. O arquivo pode vir do explorador do sistema operacional ou do explorador interno do Tag-File. O componente que receberá o Drop ainda será escolhido; arrastar uma Tag sobre um arquivo não é uma interação definida.
+Para associar por Drag and Drop, o usuário **solta um arquivo sobre a representação de uma Tag**. O arquivo pode vir do explorador do sistema operacional ou do explorador interno do Tag-File. A lista de Tags recebe o Drop por FileTransferHandler; arrastar uma Tag sobre um arquivo não é uma interação definida.
 
 JFileChooser e FileNameExtensionFilter são os componentes previstos para seleção por diálogo. O filtro visual ajuda a selecionar, mas a regra de compatibilidade também precisa funcionar quando a entrada vier por Drop.
 
@@ -77,7 +77,7 @@ Filter (classe abstrata)
 | LocalFileFilter | Cadastros persistidos de arquivos. |
 | TagFilter | Etiquetas, mantendo o retorno de Tags nas consultas correspondentes. |
 
-Extensões, tamanho e datas estão previstos como critérios relevantes. Campos exatos, intervalos e métodos ainda não estão todos definidos. Busca textual por nome, somente etiquetados/sem etiquetas e seleção de disponibilidade permanecem sugestões, não requisitos adicionais.
+Extensões, tamanho em bytes e intervalos inclusivos de modificação UTC são critérios do filtro físico. A busca por Tags combina os UUIDs selecionados com AND/OR. Os contratos concretos estão em `src/filter` e no [registro de decisões](decisoes-implementacao.md). Busca textual por nome, somente etiquetados/sem etiquetas e seleção de disponibilidade permanecem sugestões futuras.
 
 <a id="exp-03"></a>
 
@@ -93,13 +93,13 @@ Listar arquivos físicos da pasta
 
 Map é uma estrutura que relaciona uma chave a um valor. Aqui, a chave é o caminho e o valor é o LocalFile correspondente. A apresentação procura nesse mapa o cadastro de cada arquivo listado. Se não houver correspondência, o arquivo continua aparecendo.
 
-A consulta em lote evita exigir uma consulta SQL separada para cada arquivo. Sua assinatura e a normalização das chaves Path ainda precisam ser combinadas com a política de caminhos, em P-05/P-08. Listar a pasta e consultar correspondências não cria cadastros automaticamente nem equivale ao Refresh global.
+A consulta em lote evita exigir uma consulta SQL separada para cada arquivo. LocalFileDAO.findByPaths retorna o Map com chaves absolutas normalizadas lexicalmente, conforme P-05/P-08. Listar a pasta e consultar correspondências não cria cadastros automaticamente nem equivale ao Refresh global.
 
 <a id="exp-05"></a>
 
 ## Ordenação
 
-Tamanho e datas permitem filtragem. A ordenação padrão, a direção, a precedência de critérios e o uso de Comparable/Comparator ainda não foram escolhidos. Tamanho como desempate permanece uma possibilidade futura. Veja [P-13](decisoes-e-pendencias.md#p-13).
+Tamanho e datas permitem filtragem. Arquivos são ordenados por nome e depois caminho; Tags por nome e UUID, usando Comparator. Sem Tags selecionadas, a consulta mostra todos os cadastros. Veja [P-13](decisoes-e-pendencias.md#p-13).
 
 <a id="ui-01"></a>
 

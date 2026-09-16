@@ -1,12 +1,12 @@
 # Tag-File
 
-O Tag-File será um aplicativo desktop para navegar pelos arquivos da máquina, organizá-los com etiquetas e encontrá-los por essas classificações. O projeto usa **Java, Swing e MySQL** para estudar orientação a objetos e padrões de projeto.
+O Tag-File é um aplicativo desktop didático para navegar pelos arquivos da máquina, organizá-los com etiquetas e encontrá-los por essas classificações. O projeto usa **Java, Swing e MySQL** para estudar orientação a objetos e padrões de projeto.
 
 <a id="doc-01"></a>
 
 ## Situação do projeto
 
-As funcionalidades ainda não foram implementadas. Classes, tabelas e scripts descritos representam o desenho a construir. Exemplos explicam esse desenho; escolhas ainda abertas estão em [decisões e pendências](decisoes-e-pendencias.md).
+Os 24 tipos do desenho, Main, schema e scripts estão implementados. Consulte [compilação e exemplos](implementacao.md), [decisões desta implementação](decisoes-implementacao.md) e a [matriz de verificação](verificacao.md). A implementação e os testes foram executados em Linux; a execução dos scripts Windows continua não verificada. As páginas de desenho ajudam a entender os requisitos, e o registro da implementação fixa os detalhes antes abertos.
 
 <a id="doc-02"></a>
 
@@ -19,7 +19,7 @@ As funcionalidades ainda não foram implementadas. Classes, tabelas e scripts de
 | 3 | [Interface e fluxos](interface-e-fluxos.md) | O que aparece nas duas visões e como o usuário interage. |
 | 4 | [Arquitetura e padrões](arquitetura-e-padroes.md) | Responsabilidades, chamadas entre classes, Observer e DAO. |
 
-Para quem construirá a UI, a [explicação do Observer](arquitetura-e-padroes.md#arq-06) relaciona os avisos à atualização das apresentações. A [ordem de construção](arquitetura-e-padroes.md#orientacao-construcao) reúne os próximos passos de implementação.
+Para quem construirá a UI, a [explicação do Observer](arquitetura-e-padroes.md#arq-06) relaciona os avisos à atualização das apresentações. A [ordem de construção](arquitetura-e-padroes.md#orientacao-construcao) orienta a leitura das dependências da implementação.
 
 ## Documentos de consulta
 
@@ -30,7 +30,7 @@ Para quem construirá a UI, a [explicação do Observer](arquitetura-e-padroes.m
 | [Banco de dados](banco-de-dados.md) | Para entender tabelas, associações, identidade e persistência. |
 | [Instalação e execução](instalacao-e-execucao.md) | Para preparar a instância local no Windows, Ubuntu e Linux Mint. |
 | [Critérios de aceite](criterios-de-aceite.md) | Para saber como conferir uma funcionalidade implementada. |
-| [Decisões e pendências](decisoes-e-pendencias.md) | Para localizar contratos e comportamentos que ainda exigem uma escolha. |
+| [Decisões e pendências](decisoes-e-pendencias.md) | Para localizar DEC-01/DEC-02 e os contratos P-01 a P-13 resolvidos nesta versão. |
 
 <a id="doc-03"></a>
 
@@ -46,4 +46,4 @@ Uma **pendência** indica algo ainda não decidido, não apenas código por escr
 
 Antes de dividir uma funcionalidade, expliquem qual ação a inicia, quais objetos colaboram e o que muda na tela, no banco e no disco. Combinem os contratos afetados e usem os critérios de aceite para conferir o resultado.
 
-Quando uma decisão mudar, atualizem a regra, o caso de uso, os dados/contratos envolvidos e o critério correspondente. As 13 pendências estão centralizadas em sua página. As decisões encerradas são a retirada de Command em [DEC-01](decisoes-e-pendencias.md#dec-01) e a execução de apenas uma ação por vez, sem fila, em [DEC-02](decisoes-e-pendencias.md#dec-02).
+Quando uma decisão mudar, atualizem a regra, o caso de uso, os dados/contratos envolvidos e o critério correspondente. Os 13 grupos de contratos e suas decisões estão centralizados em sua página. As decisões encerradas são a retirada de Command em [DEC-01](decisoes-e-pendencias.md#dec-01) e a execução de apenas uma ação por vez, sem fila, em [DEC-02](decisoes-e-pendencias.md#dec-02).

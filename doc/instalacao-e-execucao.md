@@ -1,8 +1,8 @@
-# Instalação e execução: ambiente planejado
+# Instalação e execução: ambiente local
 
 [Índice](README.md) · [Banco de dados](banco-de-dados.md) · [Pendências de ambiente](decisoes-e-pendencias.md#p-11)
 
-O Tag-File usará uma instância MySQL local, administrada pela aplicação por scripts. Esta página explica o papel de cada parte e o fluxo a construir. Os scripts ainda não existem; versões, comandos definitivos e recuperação de preparação incompleta permanecem em P-11.
+O Tag-File usa uma instância MySQL local, administrada pela aplicação por scripts. Esta página explica o papel de cada parte e o fluxo de referência. Os scripts estão em `database/scripts`; versões, comandos reproduzíveis e resultados executados estão em [implementação](implementacao.md). O [registro P-11](decisoes-implementacao.md) define distribuição portátil, identificação da instância, schema incompleto e encerramento; Windows está implementado, mas não executado neste host.
 
 ## Entenda as peças antes de preparar o ambiente
 
@@ -24,20 +24,20 @@ O driver Java não contém o servidor. Um DAO não precisa iniciar o cliente mys
 
 | Plataforma | Scripts | Autorização prevista |
 |---|---|---|
-| Windows | PowerShell, arquivos .ps1. | Elevação pelo UAC quando necessária à instalação. |
-| Ubuntu e Linux Mint | Bash, arquivos .sh. | Mecanismo administrativo a definir; pkexec é uma possibilidade. |
+| Windows | PowerShell, arquivos .ps1. | Confirmação para baixar/extrair o pacote portátil; sem registrar serviço global. |
+| Ubuntu e Linux Mint | Bash, arquivos .sh. | Confirmação para baixar/extrair o pacote portátil; sem alterar pacotes do sistema. |
 
 Ao abrir, o aplicativo verifica os componentes necessários de cliente e servidor MySQL. Se faltarem, solicita autorização para instalar. ProcessBuilder é o recurso definido para iniciar scripts/processos externos pelo Java.
 
 Recusa ou cancelamento não representa instalação concluída. A elevação para instalar não exige manter a UI permanentemente como administrador. A preparação deve respeitar as outras instalações MySQL da máquina.
 
-Detecção de executáveis/instâncias, download, pacotes, versão e distribuição de binários ainda não foram escolhidos. Procurar no PATH é uma possibilidade, não uma estratégia completa já definida.
+Os scripts verificam os executáveis privados em `database/runtime/mysql/bin`. A distribuição oficial portátil MySQL 8.4.9 é baixada para esse runtime. Dependências nativas do pacote precisam existir no sistema; sua instalação administrativa não é feita pelos scripts. A instância é reconhecida por marcador do projeto, diretório de dados, porta e PID, conforme [P-11](decisoes-implementacao.md).
 
 <a id="amb-02"></a>
 
 ## Organização dos arquivos operacionais
 
-A pasta database fica **dentro da raiz do projeto**. O local de referência dos dados é database/runtime/data. A árvore abaixo apresenta a organização e os nomes de referência a construir:
+A pasta database fica **dentro da raiz do projeto**. Os dados ficam em database/runtime/data. A árvore abaixo apresenta os principais arquivos implementados; cada pasta de scripts também contém um auxiliar `common`:
 
 ```text
 database/
@@ -60,8 +60,10 @@ database/
 │       ├── start.sh
 │       └── stop.sh
 ├── schema/
-│   └── scripts SQL de criação e alteração
+│   ├── 001-create.sql
+│   └── 002-index.sql
 └── runtime/
+    ├── mysql/
     ├── data/
     ├── logs/
     └── run/
@@ -75,10 +77,10 @@ database/
 | initialize | Preparar pela primeira vez um diretório de dados ainda não inicializado. |
 | start | Iniciar ou reconhecer a instância administrada. |
 | stop | Encerrar a instância identificada como pertencente ao Tag-File. |
-| schema | Criar e alterar tabelas. Nomes finais dos scripts e estratégia de reaplicação estão abertos. |
+| schema | Criar tabelas ausentes e índice adicional, conferindo a estrutura existente antes de continuar. |
 | runtime | Manter dados, logs e informações de execução. |
 
-Os dados são preparados no local previsto e reutilizados nas próximas execuções; não há transferência obrigatória de uma inicialização feita em outra pasta. A política detalhada de versionamento ainda será combinada; dados pessoais, logs reais e credenciais pessoais não se tornam arquivos a compartilhar apenas por aparecerem nessa organização.
+Os dados são preparados no local previsto e reutilizados nas próximas execuções. Runtime, logs, configuração real e JAR não são versionados. Configuração de exemplo, templates, scripts e SQL são arquivos do projeto.
 
 <a id="amb-03"></a>
 
@@ -94,7 +96,7 @@ Os dados são preparados no local previsto e reutilizados nas próximas execuç�
 | Reconexão solicitada | autoReconnect=true |
 | Dados | database/runtime/data |
 
-Exemplo da configuração a construir:
+Exemplo mínimo de configuração; copie o arquivo completo de `database/config/database.properties.example`, que também define fuso e limites de espera:
 
 ```properties
 db.url=jdbc:mysql://127.0.0.1:3333/tag_file?autoReconnect=true
@@ -128,7 +130,7 @@ flowchart TD
     M --> V["Disponibilizar exploradores"]
 ```
 
-O diagrama apresenta o fluxo funcional. Na primeira preparação, cria-se a estrutura inicial; nas seguintes, reutilizam-se os dados e tratam-se as alterações necessárias de schema. Comandos, esperas, identificação da instância e recuperação de etapas incompletas continuam em P-11.
+O diagrama apresenta o fluxo funcional. Na primeira preparação, cria-se a estrutura inicial; nas seguintes, reutilizam-se os dados. O Manager confere tabelas, chaves e tipos; estrutura incompatível gera erro sem apagar dados. Esperas e identificação da instância estão registradas em P-11. Nos modos de demonstração, a limpeza de domínio só é exercitada quando não atinge cadastros externos ao cenário, conforme [o guia](implementacao.md).
 
 **Inicializar os dados** e **iniciar o servidor** são operações diferentes. Uma falha de conexão não autoriza apagar o diretório, reinicializar o banco ou iniciar outro servidor com o mesmo conjunto de dados.
 
@@ -138,33 +140,33 @@ A limpeza de domínio remove apenas cadastros com única Tag Etiqueta Ausente e 
 
 ## Conexão compartilhada e reconexão
 
-Os DAOs guardam referência à mesma instância de DatabaseConnection. Ela controla a abertura, tratamento e fechamento da conexão; não há pool. O DAO não deve fechar a conexão compartilhada ao terminar cada chamada. getConnection e close são nomes de referência, sem contrato completo de implementação.
+Os DAOs guardam referência à mesma instância de DatabaseConnection. Ela controla a abertura e o fechamento da conexão; não há pool. `open` abre ou verifica a conexão existente; `getConnection` a empresta sem transferir sua propriedade; `close` pertence ao encerramento da sessão. Os DAOs fecham somente seus Statements e ResultSets.
 
 A configuração mantém autoReconnect=true. Essa opção não garante concluir uma operação interrompida, repetir escritas, desfazer alterações ou evitar exceções. A documentação do driver descreve limites e efeitos sobre estado de sessão e consistência. [Referência de autoReconnect](https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-high-availability-and-clustering.html).
 
-Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausente. Todas as ações respeitam o limite compartilhado de [uma ação por vez](requisitos-e-regras.md#op-09), sem fila. A verificação de validade da conexão e o mecanismo técnico para garantir esse limite ainda precisam ser combinados; apresentar Loading, isoladamente, não controla as demais entradas da aplicação.
+Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausente. Todas as ações respeitam o limite compartilhado de [uma ação por vez](requisitos-e-regras.md#op-09), sem fila. `ActionGate` faz a admissão atômica antes de iniciar a thread de trabalho; Loading acompanha essa posse até a conclusão real.
 
 <a id="amb-06"></a>
 
 ## JDK, JDBC e inclusão do driver
 
-O ambiente de referência é **JDK 24**, sem Maven. JDBC faz parte da API Java; o driver MySQL Connector/J será incluído manualmente como JAR no desenvolvimento. A versão final de servidor e driver ainda precisa ser escolhida em P-11.
+O ambiente de referência é **JDK 24**, sem Maven. JDBC faz parte da API Java; o Connector/J **9.7.0** é incluído manualmente como JAR. A implementação foi executada com MySQL **8.4.9**; fontes de compatibilidade estão no [registro P-11](decisoes-implementacao.md).
 
 ```text
 lib/
-└── mysql-connector-j-<versão>.jar
+└── mysql-connector-j-9.7.0.jar
 ```
 
-Colocar o JAR em lib e incluí-lo como biblioteca/classpath são tarefas diferentes. O classpath informa ao Java onde encontrar as classes da dependência. A equipe precisará configurar essa inclusão ao implementar a aplicação.
+Colocar o JAR em lib e incluí-lo como biblioteca/classpath são tarefas diferentes. O classpath informa ao Java onde encontrar as classes da dependência. Os scripts de compilação e os comandos do [guia](implementacao.md) incluem `lib/*`.
 
-A estrutura permanece sem Gradle, Spring, Hibernate ou outro gerenciador/ORM adicional. Ao escolher as versões, será preciso conferir a compatibilidade do JDK, servidor e driver; esta página não fixa uma versão por exemplo.
+A estrutura permanece sem Gradle, Spring, Hibernate ou outro gerenciador/ORM adicional. Uma atualização futura de versões precisa conferir novamente a compatibilidade do JDK, servidor e driver.
 
 <a id="amb-07"></a>
 
 ## Encerramento e preservação
 
-DatabaseManager coordena a parada da instância administrada e DatabaseConnection o fechamento da conexão compartilhada. A ordem detalhada, identificação de um processo já iniciado e tratamento de encerramento forçado ainda estão em P-11.
+DatabaseManager coordena a parada da instância administrada e DatabaseConnection o fechamento da conexão compartilhada. No fechamento normal da janela, a conexão é fechada antes do servidor. A janela recusa encerramento durante uma ação ativa. Não há promessa de recuperação automática após encerramento forçado.
 
 O aplicativo deve reconhecer sua instância, sem parar qualquer mysqld encontrado no computador. Dados existentes permanecem preservados; falha operacional não autoriza uma limpeza destrutiva.
 
-Ao implementar o ambiente, use [UC-01](casos-de-uso.md#uc-01), [ACE-23](criterios-de-aceite.md#ace-23) e [ACE-24](criterios-de-aceite.md#ace-24) para conferir parâmetros, reutilização e tratamento da autorização.
+Use [UC-01](casos-de-uso.md#uc-01), [ACE-23](criterios-de-aceite.md#ace-23) e [ACE-24](criterios-de-aceite.md#ace-24) para conferir parâmetros, reutilização e tratamento da autorização. As evidências e limitações por plataforma estão em [verificação](verificacao.md).
