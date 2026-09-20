@@ -3,9 +3,9 @@
  * ElevatedScriptExecutor(): impede instanciação da utilidade.
  * execute(Path, String...): solicita elevação nativa e acompanha o resultado do script.
  * command(Path, Path, String[]): prepara argumentos de pkexec ou UAC.
- * windowsCommand(Path, Path, String[], String, String): prepara a solicitação de UAC e o script elevado.
+ * windowsCommand(Path, Path, String[], String, String): prepara a chamada ao launcher nativo e o script elevado.
+ * windowsTask(Path): informa o arquivo temporário executado pelo PowerShell elevado.
  * powershellLiteral(String): representa um argumento literal no PowerShell.
- * encodedCommand(String): codifica o comando para o parâmetro -EncodedCommand.
  * checkResult(int, Path): distingue sucesso, cancelamento e falha.
  */
 
@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -44,32 +43,43 @@ public final class ElevatedScriptExecutor {
         if (!Files.isRegularFile(absoluteScript)) throw new IOException("Script inválido: " + absoluteScript);
         Path log = Files.createTempFile("tag-file-elevated-", ".log");
         List<String> command = command(absoluteScript, log, arguments);
+        boolean windows = System.getProperty("os.name").startsWith("Windows");
+        System.out.println("Solicitando autorização do sistema para: " + absoluteScript + "\nLog: " + log);
         // Inicia apenas o script elevado; a aplicação continua com a conta atual.
         ProcessBuilder builder = new ProcessBuilder(command).directory(Path.of(".").toAbsolutePath().toFile());
-        if (System.getProperty("os.name").startsWith("Windows")) {
-            // O PowerShell elevado grava o log; o processo que solicita UAC usa o console.
+        if (windows) {
+            // O Windows abre o console elevado; o solicitante informa falhas no console do Java.
             builder.inheritIO();
         } else {
             builder.redirectErrorStream(true).redirectOutput(log.toFile());
         }
-        Process process = builder.start();
+        Process process = null;
         try {
-            if (!process.waitFor(15, TimeUnit.MINUTES)) {
+            process = builder.start();
+            if (windows) {
+                // Start-Process -Wait acompanha o processo elevado e seus descendentes.
+                process.waitFor();
+            } else if (!process.waitFor(15, TimeUnit.MINUTES)) {
                 process.destroy();
                 throw new IOException("Tempo excedido na autorização ou execução do script. Consulte: " + log);
             }
             checkResult(process.exitValue(), log);
         } catch (InterruptedException interrupted) {
-            process.destroy();
+            if (process != null) process.destroy();
             Thread.currentThread().interrupt();
             throw interrupted;
+        } finally {
+            // Se a espera for interrompida, o Windows ainda pode estar usando este arquivo.
+            if (windows && (process == null || !process.isAlive()) && !Thread.currentThread().isInterrupted()) {
+                Files.deleteIfExists(windowsTask(log));
+            }
         }
         System.out.println("Script concluído: " + absoluteScript + "\nLog: " + log);
     }
 
     /**
      * Prepara a chamada nativa sem concatenar argumentos em comandos de shell no Linux.
-     * No Windows, valores são literais e o comando completo usa UTF-16LE em Base64.
+     * No Windows, usa -File com um launcher PowerShell e um script temporário legível.
      *
      * @param script script absoluto existente
      * @param log destino da saída do script
@@ -98,17 +108,19 @@ public final class ElevatedScriptExecutor {
     }
 
     /**
-     * Usa UAC para executar um PowerShell separado, com argumentos literais e log próprio.
+     * Delega UAC a Start-Process; o próprio console elevado executa o script e mostra a saída.
      * @param script script PowerShell
      * @param log destino da saída
      * @param arguments argumentos do script
      * @param javaHome JDK usado pela aplicação
      * @param systemRoot diretório do Windows
      * @return chamada que solicita a elevação, aguarda e devolve o código do script
+     * @throws IOException se o launcher estiver ausente ou o script temporário não puder ser gravado
      */
     private static List<String> windowsCommand(Path script, Path log, String[] arguments,
-            String javaHome, String systemRoot) {
+            String javaHome, String systemRoot) throws IOException {
         String powershell = Path.of(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe").toString();
+        Path launcher = Path.of("scripts/elevate.ps1").toRealPath();
         // Mantém caminhos/valores como dados. O único switch previsto pelo contrato
         // de instalação precisa ser um parâmetro, pois '-Authorized' entre aspas
         // seria um valor posicional e deixaria [switch]$Authorized desativado.
@@ -117,41 +129,31 @@ public final class ElevatedScriptExecutor {
             invocation.append(' ').append("-Authorized".equalsIgnoreCase(argument)
                     ? "-Authorized" : powershellLiteral(argument));
         }
-        // O filho formata exceções completas como texto; argumentos continuam sendo literais.
-        String child = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; "
-                + "[Console]::OutputEncoding=New-Object Text.UTF8Encoding $false; "
-                + "$global:LASTEXITCODE=0; try { " + invocation + "; exit $LASTEXITCODE } "
-                + "catch { [Console]::Error.WriteLine(($_ | Format-List * -Force | Out-String -Width 4096)); exit 1 }";
-        // Captura os canais diretamente pelo .NET. Redirecionar stderr pelo pipeline do
-        // Windows PowerShell 5.1 com Stop pode perder mensagens ou transformar avisos em falhas.
-        String elevated = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; $env:TAG_FILE_JDK=" + powershellLiteral(javaHome)
-                + "; $utf8=New-Object Text.UTF8Encoding $false; $log=" + powershellLiteral(log.toString())
-                + "; $process=New-Object Diagnostics.Process; try { "
-                + "$info=New-Object Diagnostics.ProcessStartInfo; $info.FileName=" + powershellLiteral(powershell)
-                + "; $info.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -OutputFormat Text -EncodedCommand "
-                + encodedCommand(child) + "'; $info.UseShellExecute=$false; $info.CreateNoWindow=$true; "
-                + "$info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true; "
-                + "$info.StandardOutputEncoding=$utf8; $info.StandardErrorEncoding=$utf8; "
-                + "$process.StartInfo=$info; if (!$process.Start()) { throw 'Falha ao iniciar PowerShell filho' }; "
-                + "$stdout=$process.StandardOutput.ReadToEndAsync(); $stderr=$process.StandardError.ReadToEndAsync(); "
-                + "$timedOut=!$process.WaitForExit(840000); if ($timedOut) { $process.Kill(); $process.WaitForExit() }; "
-                + "$output=$stdout.GetAwaiter().GetResult(); $errors=$stderr.GetAwaiter().GetResult(); "
-                + "$code=$process.ExitCode; [IO.File]::WriteAllText($log, "
-                + "('[stdout]'+[Environment]::NewLine+$output+[Environment]::NewLine+'[stderr]'"
-                + "+[Environment]::NewLine+$errors+[Environment]::NewLine+'ExitCode: '+$code), $utf8); "
-                + "if ($timedOut) { throw 'Tempo excedido no script elevado (14 minutos)' }; exit $code } "
-                + "catch { [IO.File]::AppendAllText($log, [Environment]::NewLine+"
-                + "($_ | Format-List * -Force | Out-String -Width 4096), $utf8); exit 1 } "
-                + "finally { $process.Dispose() }";
-        String request = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; try { $process=Start-Process -FilePath "
-                + powershellLiteral(powershell)
-                + " -ArgumentList '-NoProfile','-NonInteractive','-EncodedCommand','" + encodedCommand(elevated)
-                + "' -Verb RunAs -Wait -PassThru; exit $process.ExitCode } "
-                + "catch { $cause=$_.Exception; while ($null -ne $cause) { "
-                + "if ($cause -is [System.ComponentModel.Win32Exception] -and $cause.NativeErrorCode -eq 1223) { exit 126 }; "
-                + "$cause=$cause.InnerException }; Write-Error $_ -ErrorAction Continue; exit 127 }";
-        return List.of(powershell, "-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand(request));
+        String task = "\ufeff$ErrorActionPreference = 'Stop'\n"
+                + "[Console]::OutputEncoding = New-Object Text.UTF8Encoding $false\n"
+                + "$env:TAG_FILE_JDK = " + powershellLiteral(javaHome) + "\n"
+                + "$log = " + powershellLiteral(log.toString()) + "\n"
+                + "$global:LASTEXITCODE = 0\n$code = 1\n$transcribing = $false\n"
+                + "try {\n    Start-Transcript -LiteralPath $log -Force | Out-Null\n"
+                + "    $transcribing = $true\n    Write-Host " + powershellLiteral("Executando: " + script) + "\n"
+                + "    " + invocation + "\n    $code = $LASTEXITCODE\n"
+                + "} catch {\n    Write-Host ($_ | Format-List * -Force | Out-String -Width 4096)\n    $code = 1\n"
+                + "} finally {\n    Write-Host \"ExitCode: $code | Log: $log\"\n"
+                + "    if ($transcribing) { Stop-Transcript | Out-Null }\n}\n"
+                + "if ($code -ne 0 -and ![Console]::IsInputRedirected) {\n"
+                + "    Read-Host 'O script falhou. Pressione Enter para retornar ao Tag-File' | Out-Null\n}\n"
+                + "exit $code\n";
+        Files.writeString(windowsTask(log), task, StandardCharsets.UTF_8);
+        return List.of(powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                "-File", launcher.toString(), "-ScriptPath", windowsTask(log).toString(), "-LogPath", log.toString());
     }
+
+    /**
+     * Localiza o script temporário correspondente ao log de uma execução.
+     * @param log log exclusivo da execução
+     * @return caminho do script temporário, preservado quando a espera é interrompida
+     */
+    private static Path windowsTask(Path log) { return log.resolveSibling(log.getFileName() + ".ps1"); }
 
     /**
      * Delimita um valor como texto literal no PowerShell.
@@ -159,15 +161,6 @@ public final class ElevatedScriptExecutor {
      * @return literal entre apóstrofos, com apóstrofos internos duplicados
      */
     private static String powershellLiteral(String value) { return "'" + value.replace("'", "''") + "'"; }
-
-    /**
-     * Prepara o formato aceito pelo PowerShell, sem escapes de linha de comando adicionais.
-     * @param command código formado somente com valores literais escapados
-     * @return código em Base64 de UTF-16LE
-     */
-    private static String encodedCommand(String command) {
-        return Base64.getEncoder().encodeToString(command.getBytes(StandardCharsets.UTF_16LE));
-    }
 
     /**
      * Preserva cancelamento como resultado distinto de falha de execução.

@@ -24,14 +24,21 @@ O script Bash confere o suporte ao alvo configurado antes de limpar as saídas a
 
 No Windows, use `powershell -NoProfile -File scripts/build.ps1` e, somente após sucesso, `java -cp 'out/classes;lib/*' Main`. `$env:TAG_FILE_JDK` pode indicar o JDK. O build PowerShell usa alvo Java 22, valida as ferramentas antes de substituir saídas e registra logs em `out/build-logs`. Consulte o [contrato, testes e limites do build PowerShell](build-powershell.md). A execução real no Windows continua não verificada neste ambiente.
 
-No IntelliJ, configure um JDK superior à versão 21, mantenha `src` como **Sources Root**, adicione o Connector/J às dependências do módulo e execute a classe `Main`, sem argumentos, com o diretório de trabalho na raiz do projeto.
+No IntelliJ, mantenha `src` como **Sources Root** e o Connector/J nas dependências do módulo. Na configuração de execução **Application**:
+
+1. Selecione a classe principal `Main` e um JDK compatível com o alvo do projeto (a configuração atual do IntelliJ usa Java 24).
+2. Deixe **Program arguments** vazio para abrir o aplicativo e **Working directory** na raiz do projeto.
+3. Execute **Run**. A compilação do IntelliJ precede a inicialização do Java; a janela principal só aparece depois da preparação do MySQL e da conexão JDBC.
+4. Se for necessária a instalação, o Windows solicita UAC e abre um console PowerShell elevado com o progresso. Em caso de falha, leia o diagnóstico e pressione Enter para devolver o resultado ao Java, que apresenta o diálogo de erro.
+
+Se a janela principal ainda não aparecer, observe a janela PowerShell e o console **Run**: o executor informa o script solicitado e o caminho de seu log. A opção `--build` seleciona apenas a compilação elevada; sua existência não comprova que seja a causa de uma execução que continua aguardando.
 
 ## Execução de scripts com elevação
 
 `Main.executeScriptWithElevation(Path, String...)` delega a execução ao serviço `ElevatedScriptExecutor`:
 
 - **Linux:** usa `pkexec` e o agente de autenticação da sessão gráfica. Não há leitura de senha pelo Java nem fallback para solicitar senha pelo terminal.
-- **Windows:** usa `Start-Process -Verb RunAs`, que solicita a autorização pelo UAC. A aplicação Java continua com as permissões da conta atual.
+- **Windows:** chama [scripts/elevate.ps1](../scripts/elevate.ps1), que usa `Start-Process powershell.exe -Verb RunAs -WindowStyle Normal -Wait -PassThru`. O Windows solicita UAC e abre o console elevado. A aplicação Java continua com as permissões da conta atual.
 
 São dois pontos de entrada:
 
@@ -48,11 +55,17 @@ java -cp 'out/classes:lib/*' Main --build
 
 O `Main` precisa estar compilado para executar esse comando. A primeira compilação pode ser feita pelo IntelliJ ou pelo script com um JDK superior à versão 21, conforme os comandos anteriores. Elevação não substitui o JDK correto. O executor transmite o `java.home` da aplicação como `TAG_FILE_JDK`, inclusive após a limpeza de ambiente feita pelo `pkexec`.
 
-As saídas dos scripts são registradas em arquivos temporários `tag-file-elevated-*.log`; o caminho aparece no console ou na mensagem de erro. A espera por autorização/execução tem limite de 15 minutos. Cancelamento e falha não permitem seguir para a preparação do banco. No Linux, `scripts/elevated-common.sh` devolve à conta solicitante a propriedade das saídas de compilação e dos arquivos criados pelo instalador, também quando o script falha. A aplicação e o servidor MySQL continuam sendo executados sem elevação.
+No Windows, o executor grava um pequeno `.ps1` temporário, em UTF-8 com BOM, com os caminhos, argumentos e JDK da execução. O launcher entrega esse arquivo ao PowerShell com `-File`; o console elevado executa o script diretamente, sem outro processo oculto ou comandos em Base64. O arquivo temporário é removido após o retorno; o log permanece. Se a espera Java for interrompida, o arquivo é preservado porque o processo elevado ainda pode estar usando-o.
+
+O console mostra a saída durante a execução. `Start-Transcript` registra mensagens do host PowerShell, exceções e o resultado em `tag-file-elevated-*.log`; o caminho aparece no console do Java e em mensagens de falha. A transcrição não garante a captura de escritas diretas em `[Console]`, usadas pelo build: os diagnósticos completos do compilador continuam em `out/build-logs/*.log`. Em caso de falha do script, a janela elevada aguarda Enter antes de devolver o código ao Java.
+
+No Windows, a espera é a do próprio `Start-Process -Wait`, sem o antigo limite adicional de 14/15 minutos do executor. Os limites internos das ferramentas do build continuam valendo. Cancelar o UAC encerra a inicialização; falhas retornam para o tratamento de erros de `Main`.
+
+No Linux, stdout/stderr continuam no log temporário e a espera mantém o limite de 15 minutos. `scripts/elevated-common.sh` devolve à conta solicitante a propriedade das saídas de compilação e dos arquivos criados pelo instalador, também quando o script falha. A aplicação e o servidor MySQL continuam sendo executados sem elevação.
 
 Referências dos mecanismos nativos: [pkexec/polkit](https://polkit.pages.freedesktop.org/polkit/pkexec.1.html) e [Start-Process/UAC](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1).
 
-Verificação desta integração: compilação e Javadoc concluídos sem avisos; cenários isolados confirmaram a ordem instalar → inicializar → iniciar, a ausência de nova instalação quando o ambiente está pronto, a interrupção por cancelamento/falha simulados e a preservação do JDK e dos argumentos nos comandos construídos. Os resultados locais estão em `out/elevation-check/results.log`. A autenticação nativa real, a restauração de propriedade executada como root e a execução no Windows não foram testadas nesta verificação.
+Verificações anteriores da integração confirmaram a ordem instalar → inicializar → iniciar, a ausência de nova instalação quando o ambiente está pronto e a interrupção por cancelamento/falha simulados. A revisão do executor Windows tem testes reproduzíveis e limites descritos em [build PowerShell](build-powershell.md#substituição-do-executor-windows-por-console-nativo). A autenticação nativa real e a execução no Windows não foram testadas neste ambiente Linux.
 
 ## Ambiente e ciclo de vida
 
