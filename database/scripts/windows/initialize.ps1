@@ -6,6 +6,7 @@ if ((Test-Path $Data) -and (Get-ChildItem -Force $Data | Measure-Object).Count -
 New-Item -ItemType Directory -Force $Data, $Run, (Join-Path $Runtime 'logs') | Out-Null
 $template = Get-Content (Join-Path $ProjectRoot 'database/config/mysql-windows.ini.template') -Raw
 [IO.File]::WriteAllText($Config, $template.Replace('@ROOT@', $ProjectRoot.Replace('\','/')), (New-Object Text.UTF8Encoding $false))
+Write-SetupProgress 'Inicializando arquivos do banco'
 & mysqld --no-defaults --initialize-insecure "--datadir=$Data" "--log-error=$Runtime/logs/initialize.log"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 [IO.File]::WriteAllText((Join-Path $Runtime 'instance.owner'), $ProjectRoot)

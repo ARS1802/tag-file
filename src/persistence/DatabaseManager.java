@@ -24,6 +24,9 @@
 package persistence;
 
 import model.*;
+import service.PreparationProgress;
+import service.ScriptProgressMonitor;
+import java.util.function.Consumer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -44,6 +47,16 @@ public final class DatabaseManager {
     private final Path root;
     /** Executor elevado para Linux; a instalação portátil Windows usa a conta atual. */
     private final Installer installer;
+    /** Atualizações curtas da preparação, sem executar trabalho gráfico nesta thread. */
+    private Consumer<PreparationProgress> progressListener = progress -> { };
+
+    /**
+     * Define o destino do progresso antes de preparar a instância.
+     * @param listener observador que encaminha atualizações à interface
+     */
+    public void setProgressListener(Consumer<PreparationProgress> listener) {
+        progressListener = Objects.requireNonNull(listener);
+    }
 
     /** Fronteira de elevação usada pela instalação Linux. */
     @FunctionalInterface
@@ -123,17 +136,25 @@ public final class DatabaseManager {
     }
 
     /** Preserva o código do script para distinguir ausência de falhas de execução. */
-    private static final class ScriptFailure extends IOException {
+    public static final class ScriptFailure extends IOException {
         /** Código retornado pelo processo PowerShell ou Bash. */
         private final int exitCode;
+        /** Arquivo persistente com diagnóstico completo. */
+        private final Path log;
+        /** Retorna o log sem extrair caminhos da mensagem de erro.
+         * @return arquivo de diagnóstico
+         */
+        public Path getLog() { return log; }
         /**
          * Associa o diagnóstico ao código de saída do processo.
          * @param exitCode código retornado pelo script
          * @param message etapa, log e diagnóstico do processo
+         * @param log arquivo persistente do processo
          */
-        private ScriptFailure(int exitCode, String message) {
+        private ScriptFailure(int exitCode, String message, Path log) {
             super(message);
             this.exitCode = exitCode;
+            this.log = log;
         }
     }
 
@@ -150,6 +171,14 @@ public final class DatabaseManager {
         if (!Set.of("check", "install", "initialize", "start", "stop").contains(action)) throw new IllegalArgumentException("Script desconhecido");
         boolean windows = System.getProperty("os.name").startsWith("Windows");
         Path script = root.resolve("database/scripts/" + (windows ? "windows/" : "linux/") + action + (windows ? ".ps1" : ".sh"));
+        String stage = switch (action) {
+            case "check" -> "Verificando componentes do MySQL";
+            case "install" -> "Preparando instalação do MySQL";
+            case "initialize" -> "Preparando dados do banco";
+            case "start" -> "Iniciando servidor MySQL";
+            default -> "Encerrando servidor MySQL";
+        };
+        progressListener.accept(new PreparationProgress(stage, -1, null));
         if (action.equals("install") && !windows && installer != null) {
             if (!authorized) throw new IOException("Instalação não autorizada");
             installer.install(script, "--authorized");
@@ -165,15 +194,22 @@ public final class DatabaseManager {
         catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
         Files.writeString(log, "Script: " + script + "\nSHA-256: " + hash + "\n", StandardCharsets.UTF_8);
         System.out.println("Preparando MySQL: " + action + "\nScript: " + script + "\nSHA-256: " + hash + "\nLog: " + log);
+        progressListener.accept(new PreparationProgress(stage, -1, log));
         Process process = new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.appendTo(log.toFile())).start();
-        try {
-            if (!process.waitFor(Duration.ofMinutes(action.equals("install") ? 15 : 2).toMillis(), TimeUnit.MILLISECONDS)) {
-                process.destroy(); throw new IOException("Tempo excedido no script " + action + "; consulte " + log);
+        try (ScriptProgressMonitor monitor = new ScriptProgressMonitor(log, progressListener)) {
+            long deadline = System.nanoTime() + Duration.ofMinutes(action.equals("install") ? 15 : 2).toNanos();
+            while (!process.waitFor(150, TimeUnit.MILLISECONDS)) {
+                monitor.poll();
+                if (System.nanoTime() >= deadline) {
+                    process.destroy(); throw new ScriptFailure(-1, "Tempo excedido no script " + action + "; consulte " + log, log);
+                }
             }
+            monitor.poll();
         } catch (InterruptedException e) { process.destroy(); Thread.currentThread().interrupt(); throw e; }
+        catch (IOException e) { process.destroy(); throw e; }
         String output = Files.readString(log, StandardCharsets.UTF_8);
-        if (process.exitValue() != 0) throw new ScriptFailure(process.exitValue(), "Script " + action + ": código de saída " + process.exitValue() + "\nLog: " + log + "\n" + output);
+        if (process.exitValue() != 0) throw new ScriptFailure(process.exitValue(), "Script " + action + ": código de saída " + process.exitValue() + "\nLog: " + log + "\n" + output, log);
         return output.strip();
     }
 

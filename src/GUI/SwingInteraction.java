@@ -23,12 +23,16 @@
 package GUI;
 
 import service.ActionGate;
+import persistence.DatabaseManager;
+import java.awt.datatransfer.StringSelection;
+import java.nio.file.Files;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.concurrent.*;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -119,10 +123,55 @@ public final class SwingInteraction implements Interaction {
             }
             JTextArea technical = new JTextArea(detail.toString(), 12, 65); technical.setEditable(false);
             JScrollPane scroll = new JScrollPane(technical); scroll.setVisible(false); panel.add(scroll, BorderLayout.CENTER);
-            JCheckBox expanded = new JCheckBox("Mostrar detalhes técnicos"); panel.add(expanded, BorderLayout.SOUTH);
+            JCheckBox expanded = new JCheckBox("Mostrar detalhes técnicos");
+            JPanel actions = new JPanel(new BorderLayout());
+            actions.add(expanded, BorderLayout.NORTH);
+            for (Throwable cause = actual; cause != null; cause = cause.getCause()) {
+                if (cause instanceof DatabaseManager.ScriptFailure scriptFailure) {
+                    actions.add(logActions(scriptFailure.getLog()), BorderLayout.SOUTH); break;
+                }
+            }
+            panel.add(actions, BorderLayout.SOUTH);
             expanded.addActionListener(e -> { scroll.setVisible(expanded.isSelected()); Window window = SwingUtilities.getWindowAncestor(panel); if (window != null) window.pack(); });
             JOptionPane.showMessageDialog(parent, panel, "Resultado da operação", JOptionPane.ERROR_MESSAGE); return null;
         });
+    }
+
+    /**
+     * Oferece acesso ao diagnóstico sem depender da exibição de pastas ignoradas no IDE.
+     * @param path arquivo de log ou diretório de logs
+     * @return botões para abrir a pasta e copiar o caminho
+     */
+    public static JPanel logActions(Path path) { return logActions(() -> path); }
+
+    /**
+     * Oferece acesso ao log corrente quando a etapa muda durante a preparação.
+     * @param path fornecedor do arquivo ou pasta, consultado na EDT
+     * @return botões de acesso ao diagnóstico
+     */
+    public static JPanel logActions(Supplier<Path> path) {
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton copy = new JButton("Copiar caminho do log");
+        copy.addActionListener(event -> Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(new StringSelection(path.get().toString()), null));
+        JButton open = new JButton("Abrir pasta de logs");
+        open.addActionListener(event -> {
+            Path selected = path.get();
+            new Thread(() -> {
+                try {
+                    Path directory = Files.isDirectory(selected) ? selected : selected.getParent();
+                    if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                        throw new IllegalStateException("Abertura de pastas indisponível; copie o caminho.");
+                    }
+                    Desktop.getDesktop().open(directory.toFile());
+                } catch (Exception failure) {
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(buttons,
+                            "Não foi possível abrir a pasta. Copie o caminho.\n" + failure.getMessage()));
+                }
+            }, "tag-file-open-log").start();
+        });
+        buttons.add(open); buttons.add(copy);
+        return buttons;
     }
 
     /**

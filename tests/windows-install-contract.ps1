@@ -59,7 +59,7 @@ try {
         foreach ($name in @('install.ps1', 'common.ps1')) {
             [IO.File]::Copy((Join-Path $Project "database/scripts/windows/$name"), (Join-Path $scripts $name))
         }
-        $manifest = @{ version = '8.4.9'; file = 'mysql-8.4.9-winx64.zip'; directory = 'mysql-8.4.9-winx64'; sha256 = $hash; url = 'https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.9-winx64.zip' }
+        $manifest = @{ bytes = ([IO.FileInfo]$zip).Length; version = '8.4.9'; file = 'mysql-8.4.9-winx64.zip'; directory = 'mysql-8.4.9-winx64'; sha256 = $hash; url = 'https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.9-winx64.zip' }
         $inputZip = $zip
         if ($mode -eq 'wrong-hash') { $manifest.sha256 = '0' * 64 }
         if ($mode -eq 'bad-zip') {

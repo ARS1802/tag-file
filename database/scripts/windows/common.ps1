@@ -20,3 +20,12 @@ function Assert-Server {
     $parts = $result -split "`t"
     if ([IO.Path]::GetFullPath($parts[0]).TrimEnd('\','/') -ne $Data.TrimEnd('\','/') -or $parts[1] -ne '3333') { throw 'Porta ocupada por outra instância' }
 }
+
+# Eventos curtos no log, lidos pelo Java enquanto o script trabalha.
+function Write-SetupProgress([string]$Message, [string]$TransferPath = '', [long]$TotalBytes = 0) {
+    if ($TransferPath -and $TotalBytes -gt 0) {
+        [Console]::WriteLine("TAG_FILE_PROGRESS`tTRANSFER`t$Message`t$TotalBytes`t$TransferPath")
+    } else {
+        [Console]::WriteLine("TAG_FILE_PROGRESS`tSTAGE`t$Message")
+    }
+}

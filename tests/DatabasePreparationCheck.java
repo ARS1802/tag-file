@@ -25,6 +25,9 @@ public final class DatabasePreparationCheck {
             Path scripts = Files.createDirectories(root.resolve("database/scripts/windows"));
             write(scripts.resolve("check.ps1"), "exit ([int](Get-Content -LiteralPath (Join-Path $PSScriptRoot 'code')))\n");
             write(scripts.resolve("install.ps1"), "param([switch]$Authorized)\nif (!$Authorized) { exit 9 }\n"
+                    + "Write-Output \"TAG_FILE_PROGRESS`tSTAGE`tInstalando teste\"\n"
+                    + "$limit = (Get-Date).AddSeconds(5)\n"
+                    + "while (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'release'))) { if ((Get-Date) -gt $limit) { exit 11 }; Start-Sleep -Milliseconds 20 }\n"
                     + "Set-Content -LiteralPath (Join-Path $PSScriptRoot 'installed') -Value yes\nexit 0\n");
             for (String action : new String[]{"initialize", "start"}) {
                 write(scripts.resolve(action + ".ps1"), "Set-Content -LiteralPath (Join-Path $PSScriptRoot '"
@@ -33,12 +36,23 @@ public final class DatabasePreparationCheck {
             DatabaseManager manager = new DatabaseManager(root, (script, argument) -> {
                 throw new AssertionError("Windows nao deve solicitar elevacao");
             });
+            java.util.concurrent.atomic.AtomicBoolean liveProgress = new java.util.concurrent.atomic.AtomicBoolean();
+            manager.setProgressListener(progress -> {
+                if (progress.message().equals("Instalando teste")) {
+                    check(!Files.exists(scripts.resolve("installed")), "Progresso recebido antes de o script terminar");
+                    check(Files.exists(progress.log()), "Log existe durante a execucao");
+                    liveProgress.set(true);
+                    try { Files.writeString(scripts.resolve("release"), "continue"); }
+                    catch (IOException e) { throw new java.io.UncheckedIOException(e); }
+                }
+            });
             Files.writeString(scripts.resolve("code"), "4");
             try { manager.prepare(false); throw new AssertionError("Consentimento ignorado"); }
             catch (DatabaseManager.InstallationRequiredException expected) { checks++; }
             check(!Files.exists(scripts.resolve("installed")), "Recusa nao instala");
             check(!Files.exists(scripts.resolve("initialize-executed")), "Recusa nao inicializa dados");
             manager.prepare(true);
+            check(liveProgress.get(), "Observador recebe progresso ao vivo");
             check(Files.exists(scripts.resolve("installed")), "Windows instala sem executor elevado");
             check(Files.exists(scripts.resolve("start-executed")), "Preparacao continua apos instalacao");
             for (int code : new int[]{5, 6}) {

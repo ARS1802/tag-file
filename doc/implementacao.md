@@ -29,7 +29,7 @@ No IntelliJ, mantenha `src` como **Sources Root** e o Connector/J nas dependênc
 1. Selecione a classe principal `Main` e um JDK compatível com o alvo do projeto (a configuração atual do IntelliJ usa Java 24).
 2. Deixe **Program arguments** vazio para abrir o aplicativo e **Working directory** na raiz do projeto.
 3. Execute **Run**. A compilação do IntelliJ precede a inicialização do Java; a janela principal só aparece depois da preparação do MySQL e da conexão JDBC.
-4. Se faltar a instalação, confirme **Preparar** no diálogo. No Windows, o pacote portátil é preparado com a conta atual, sem UAC; o console Run informa o log. Para apresentar sem rede, siga [Windows portátil](windows-portatil.md).
+4. Se faltar a instalação, confirme **Preparar** no diálogo. No Windows, o pacote portátil é preparado com a conta atual, sem UAC; uma janela mostra progresso e oferece acesso ao log. Para apresentar sem rede, siga [Windows portátil](windows-portatil.md).
 
 Se a janela principal ainda não aparecer, observe o console **Run** e o log informado: o executor informa o script solicitado e o caminho de seu log. A opção `--build` seleciona apenas a compilação elevada; sua existência não comprova que seja a causa de uma execução que continua aguardando.
 

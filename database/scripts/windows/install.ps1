@@ -39,17 +39,21 @@ try {
         $step = 'leitura do pacote offline'
         Write-Host "Pacote offline: $ArchivePath"
         # Caminho explícito inválido não provoca download inesperado.
+        Write-SetupProgress -Message 'Copiando pacote local' -TransferPath $archive -TotalBytes (Get-Item -LiteralPath $ArchivePath).Length
         [IO.File]::Copy($ArchivePath, $archive, $false)
     } else {
         $step = 'download HTTP'
         Write-Host "Baixando MySQL $($manifest.version): $($manifest.url)"
+        Write-SetupProgress -Message 'Baixando MySQL' -TransferPath $archive -TotalBytes ([long]$manifest.bytes)
         Invoke-WebRequest -Uri $manifest.url -UseBasicParsing -TimeoutSec 300 -OutFile $archive
     }
     $step = 'verificação de integridade'
+    Write-SetupProgress 'Verificando integridade do pacote'
     $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
     if ($actualHash -ne $manifest.sha256) { throw 'SHA-256 divergente; pacote recusado antes da extração' }
     Write-Host "Pacote verificado: SHA-256 $actualHash"
     $step = 'validação e extração do ZIP'
+    Write-SetupProgress 'Extraindo MySQL'
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [IO.Compression.ZipFile]::OpenRead($archive)
     try {
@@ -65,9 +69,11 @@ try {
     Expand-Archive -LiteralPath $archive -DestinationPath $extracted
     $candidate = Join-Path $extracted $manifest.directory
     $step = 'verificação dos executáveis e dependências nativas'
+    Write-SetupProgress 'Verificando executáveis'
     & "$PSScriptRoot/check.ps1" -InstallationPath $candidate
     if ($LASTEXITCODE -ne 0) { throw "Pacote não executável (código $LASTEXITCODE); instalação não publicada" }
     $step = 'publicação da instalação'
+    Write-SetupProgress 'Concluindo instalação'
     if (Test-Path -LiteralPath $destination) { throw 'Instalação concorrente detectada; destino preservado' }
     [IO.File]::WriteAllText((Join-Path $candidate 'package.sha256'), $actualHash)
     [IO.Directory]::Move($candidate, $destination)

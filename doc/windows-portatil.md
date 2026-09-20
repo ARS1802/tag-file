@@ -16,9 +16,15 @@ explícita de compilação elevada; no Linux permanece o executor já existente.
 3. Use um JDK superior a 21, configure o classpath com `lib/*` e execute `Main`
    sem argumentos no IntelliJ. Ao faltar a instalação, confirme **Preparar**.
    **Cancelar**, ou fechar a confirmação, encerra sem instalar/inicializar dados.
-4. No console Run aparece o caminho do script, seu SHA-256 e o log da etapa em
-   `database/runtime/logs`. Em caso de falha, o diálogo informa esse log. Durante
-   o download/extração a janela principal ainda não está aberta; acompanhe o log.
+4. A janela **Preparando o Tag-File** mostra a etapa desde a abertura. Na cópia
+   e no download, a barra representa bytes transferidos em relação ao tamanho
+   conhecido do pacote, não uma estimativa do tempo total. Verificação, extração,
+   inicialização e conexão usam barra indeterminada com pontos animados.
+5. O caminho do log aparece na janela e no console Run. Os botões **Abrir pasta
+   de logs** e **Copiar caminho do log** permitem acessá-lo durante a preparação
+   e após uma falha. Os arquivos permanecem em `database/runtime/logs` no computador
+   que executou o programa; não são apagados ao encerrar. Essa pasta é ignorada pelo
+   Git e pode não aparecer em algumas visualizações do IntelliJ.
 
 O instalador procura primeiro o arquivo definido em `TAG_FILE_MYSQL_ARCHIVE`
 (caminho completo, inclusive na configuração Run do IntelliJ). Sem essa variável,
@@ -99,3 +105,47 @@ conferido e disponibilizado localmente em `database/packages`, fora do Git.
 
 Não foram executados Windows PowerShell 5.1, GUI, UAC real ou MySQL para Windows
 neste host. A passagem dos testes locais não substitui a aceitação nesse sistema.
+
+## Correção da sondagem de conexão e progresso
+
+O erro `NativeCommandError` na primeira chamada `mysqladmin ping` de `start.ps1`
+ocorria antes do comando que inicia o servidor. O Windows PowerShell 5.1 pode
+transformar stderr nativo redirecionado em erro PowerShell; com
+`ErrorActionPreference = Stop`, a indisponibilidade esperada abortava o script
+antes de conferir o código de saída. Desde PowerShell 7.2, a interação com
+redirecionamento é diferente, por isso testar só no 7 não reproduzia o caso.
+[Referência Microsoft](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables#-erroractionpreference).
+
+As duas sondagens de disponibilidade agora usam preferência `Continue` apenas
+no escopo da chamada, descartam a saída esperada e verificam o código retornado.
+A preferência anterior é restaurada no `finally`. Ausência do executável não é
+aceita como sondagem bem-sucedida. Verificação de identidade, processo existente,
+falha do servidor e limite de espera continuam interrompendo a preparação.
+Nenhuma permissão administrativa foi acrescentada.
+
+`PreparationWindow` exibe progresso sem executar scripts na EDT. O executor lê
+incrementalmente os eventos do log a cada 150 ms, preservando linhas parciais e
+UTF-8. Eventos de transferência indicam arquivo e tamanho total; a porcentagem
+vem do tamanho já escrito em disco. Não representa que o pacote foi validado
+ou que o banco está pronto. O manifesto informa o tamanho esperado do ZIP oficial.
+
+Verificação local: 22 verificações da inicialização, 64 do instalador,
+25 da coordenação Java e 12 do progresso/interface passaram. O teste da sondagem
+simula a conversão de stderr em `NativeCommandError` do PowerShell 5.1 e também
+executa processos nativos reais com saída em stderr, conferindo códigos 0/7,
+comando ausente e restauração da preferência. O teste
+Java segura um script até receber uma atualização, verificando progresso e log
+antes do término. A janela Swing foi exercitada no ambiente gráfico Linux: barra,
+animação, responsividade da EDT e fechamento. Ainda é necessária a execução
+completa no Windows PowerShell 5.1 e MySQL real.
+
+A compilação e o Javadoc de todos os fontes passaram sem avisos. A regressão do
+executor elevado concluiu mais 52 verificações, com a fronteira UAC simulada.
+Para repetir os novos testes na raiz do projeto:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\windows-start-contract.ps1
+javac --release 22 -encoding UTF-8 -cp out/classes -d out/test-classes tests/PreparationProgressCheck.java tests/DatabasePreparationCheck.java
+java -cp 'out/classes;out/test-classes' PreparationProgressCheck
+java -cp 'out/classes;out/test-classes' DatabasePreparationCheck
+```

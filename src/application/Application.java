@@ -9,6 +9,8 @@
 package application;
 
 import GUI.MainWindow;
+import GUI.PreparationWindow;
+import service.PreparationProgress;
 import GUI.SwingInteraction;
 import controller.ExplorerContext;
 import controller.LocalFileExplorerController;
@@ -64,11 +66,17 @@ public final class Application implements AutoCloseable {
      * @throws Exception se ambiente, banco ou interface não puderem iniciar
      */
     public void start() throws Exception {
-        try {
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            throw new IllegalStateException("Execute a inicialização fora da EDT");
+        }
+        try (PreparationWindow progress = PreparationWindow.open(root.resolve("database/runtime/logs"))) {
+            environment.setProgressListener(progress::update);
             prepareEnvironment();
+            progress.update(new PreparationProgress("Conectando ao banco", -1, null));
             // Compartilha uma conexão JDBC entre todos os DAOs.
             database = new DatabaseConnection(root.resolve("database/config/database.properties"));
             database.open();
+            progress.update(new PreparationProgress("Verificando estrutura do banco", -1, null));
             environment.prepareSchema(database);
 
             // Lê e manipula os arquivos físicos.
@@ -83,6 +91,7 @@ public final class Application implements AutoCloseable {
             LocalFileDAO files = new LocalFileDAO(database, links);
             // Aplica as regras de classificação e sincronização dos cadastros.
             LocalFileManager manager = new LocalFileManager(nativeService, factory, files, tags, links);
+            progress.update(new PreparationProgress("Atualizando cadastros", -1, null));
             manager.initialize();
 
             // Compartilha copiar/recortar entre os dois exploradores.
@@ -104,13 +113,14 @@ public final class Application implements AutoCloseable {
             // Compõe os painéis e vincula o fechamento à liberação dos recursos.
             ActionGate.onEdt(() -> window = new MainWindow(tagController, localController,
                     events, gate, directory, this));
+            progress.update(new PreparationProgress("Abrindo exploradores", -1, null));
             localController.navigate(directory).get();
             ActionGate.onEdt(window::show);
         } catch (Exception failure) {
             try { close(); }
             catch (Exception cleanupFailure) { failure.addSuppressed(cleanupFailure); }
             throw failure;
-        }
+        } finally { environment.setProgressListener(update -> { }); }
     }
 
     /**
