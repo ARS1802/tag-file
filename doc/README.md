@@ -47,3 +47,5 @@ Uma **pendência** indica algo ainda não decidido, não apenas código por escr
 Antes de dividir uma funcionalidade, expliquem qual ação a inicia, quais objetos colaboram e o que muda na tela, no banco e no disco. Combinem os contratos afetados e usem os critérios de aceite para conferir o resultado.
 
 Quando uma decisão mudar, atualizem a regra, o caso de uso, os dados/contratos envolvidos e o critério correspondente. Os 13 grupos de contratos e suas decisões estão centralizados em sua página. As decisões encerradas são a retirada de Command em [DEC-01](decisoes-e-pendencias.md#dec-01) e a execução de apenas uma ação por vez, sem fila, em [DEC-02](decisoes-e-pendencias.md#dec-02).
+
+- [Preparação portátil no Windows, pacote offline e diagnóstico](windows-portatil.md)

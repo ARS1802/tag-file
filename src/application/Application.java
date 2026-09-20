@@ -48,7 +48,7 @@ public final class Application implements AutoCloseable {
      *
      * @param root raiz do projeto
      * @param dialogs diálogos compartilhados pelas operações
-     * @param installer executa a instalação com autorização do sistema
+     * @param installer executa a instalação Linux com autorização do sistema
      */
     public Application(Path root, SwingInteraction dialogs, DatabaseManager.Installer installer) {
         this.root = root.toAbsolutePath().normalize();
@@ -114,7 +114,7 @@ public final class Application implements AutoCloseable {
     }
 
     /**
-     * Verifica os componentes e delega a autorização da instalação ao sistema.
+     * Verifica os componentes e solicita consentimento antes de preparar o banco.
      *
      * @throws IOException se a preparação falhar
      * @throws InterruptedException se a espera pelos scripts for interrompida
@@ -123,8 +123,11 @@ public final class Application implements AutoCloseable {
     private void prepareEnvironment() throws IOException, InterruptedException {
         try {
             environment.prepare(false);
-        } catch (IOException failure) {
-            if (!failure.getMessage().contains("instalação não autorizada")) throw failure;
+        } catch (DatabaseManager.InstallationRequiredException missing) {
+            if (dialogs.choose("O Tag-File precisa preparar o MySQL na pasta do projeto. Deseja continuar?",
+                    "Preparar", "Cancelar") != 0) {
+                throw new java.util.concurrent.CancellationException("Preparação cancelada");
+            }
             environment.prepare(true);
         }
         environmentPrepared = true;

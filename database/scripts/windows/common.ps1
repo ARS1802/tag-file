@@ -1,4 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
+# Logs lidos pelo Java têm a mesma codificação no PowerShell 5.1 e 7.
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding $false
+$OutputEncoding = [Console]::OutputEncoding
 $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $Runtime = Join-Path $ProjectRoot 'database/runtime'
 $Data = Join-Path $Runtime 'data'

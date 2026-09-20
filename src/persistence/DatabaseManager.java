@@ -6,7 +6,7 @@
  * Construtores e métodos declarados (inclusive privados e implementações anônimas):
  * - DatabaseManager.DatabaseManager(Path root): Define a raiz que contém configuração, scripts e runtime.
  * - DatabaseManager.DatabaseManager(Path root, Installer installer): Injeta a execução autorizada da instalação.
- * - Installer.install(Path script, String authorizationArgument): Executa o instalador após autorização nativa.
+ * - Installer.install(Path script, String authorizationArgument): Executa o instalador Linux após autorização nativa.
  * - DatabaseManager.inspect(): Inspeciona configuração, driver e executáveis; não instala/inicia/encerra servidor.
  * - DatabaseManager.prepare(boolean installationAuthorized): Verifica componentes; instalar requer autorização explícita do chamador/UI.
  * - DatabaseManager.runScript(String action, boolean authorized): Executa apenas scripts distribuídos; credenciais nunca vão nos argumentos.
@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -40,10 +42,10 @@ public final class DatabaseManager {
      * Raiz absoluta do projeto para configuração, scripts e dados exclusivos.
      */
     private final Path root;
-    /** Instalação com autorização nativa; null mantém a execução administrativa direta. */
+    /** Executor elevado para Linux; a instalação portátil Windows usa a conta atual. */
     private final Installer installer;
 
-    /** Fronteira usada pela entrada da aplicação para solicitar autorização ao sistema. */
+    /** Fronteira de elevação usada pela instalação Linux. */
     @FunctionalInterface
     public interface Installer {
         /**
@@ -68,7 +70,7 @@ public final class DatabaseManager {
     /**
      * Define a raiz e o executor que solicita autorização para instalar.
      * @param root raiz existente do projeto
-     * @param installer executor nativo; null para administração direta já autorizada
+     * @param installer executor nativo Linux; Windows sempre usa a conta atual
      * @throws IllegalArgumentException se scripts não estiverem presentes
      */
     public DatabaseManager(Path root, Installer installer) {
@@ -101,11 +103,38 @@ public final class DatabaseManager {
      */
     public void prepare(boolean installationAuthorized) throws IOException, InterruptedException {
         try { runScript("check", false); }
-        catch (IOException missing) {
-            if (!installationAuthorized) throw new IOException("Componentes ausentes; instalação não autorizada. Nada foi instalado.", missing);
+        catch (ScriptFailure missing) {
+            if (missing.exitCode != 4) throw missing;
+            if (!installationAuthorized) throw new InstallationRequiredException(missing);
             runScript("install", true);
         }
         runScript("initialize", false); runScript("start", false);
+    }
+
+    /** Sinaliza apenas componentes ausentes, permitindo solicitar consentimento na UI. */
+    public static final class InstallationRequiredException extends IOException {
+        /**
+         * Preserva a causa da ausência dos componentes.
+         * @param cause diagnóstico da verificação dos componentes
+         */
+        private InstallationRequiredException(Throwable cause) {
+            super("Componentes ausentes; instalação não autorizada. Nada foi instalado.", cause);
+        }
+    }
+
+    /** Preserva o código do script para distinguir ausência de falhas de execução. */
+    private static final class ScriptFailure extends IOException {
+        /** Código retornado pelo processo PowerShell ou Bash. */
+        private final int exitCode;
+        /**
+         * Associa o diagnóstico ao código de saída do processo.
+         * @param exitCode código retornado pelo script
+         * @param message etapa, log e diagnóstico do processo
+         */
+        private ScriptFailure(int exitCode, String message) {
+            super(message);
+            this.exitCode = exitCode;
+        }
     }
 
     /**
@@ -121,23 +150,30 @@ public final class DatabaseManager {
         if (!Set.of("check", "install", "initialize", "start", "stop").contains(action)) throw new IllegalArgumentException("Script desconhecido");
         boolean windows = System.getProperty("os.name").startsWith("Windows");
         Path script = root.resolve("database/scripts/" + (windows ? "windows/" : "linux/") + action + (windows ? ".ps1" : ".sh"));
-        if (action.equals("install") && installer != null) {
+        if (action.equals("install") && !windows && installer != null) {
             if (!authorized) throw new IOException("Instalação não autorizada");
-            installer.install(script, windows ? "-Authorized" : "--authorized");
+            installer.install(script, "--authorized");
             return "Instalação autorizada concluída";
         }
-        List<String> command = new ArrayList<>(windows ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString()) : List.of("bash", script.toString()));
+        List<String> command = new ArrayList<>(windows ? List.of("powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script.toString()) : List.of("bash", script.toString()));
         if (authorized) command.add(windows ? "-Authorized" : "--authorized");
         Files.createDirectories(root.resolve("database/runtime/logs"));
         Path log = Files.createTempFile(root.resolve("database/runtime/logs"), action + "-", ".log");
-        Process process = new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        // Identifica a cópia executada, mesmo se o PowerShell falhar antes de carregar o script.
+        String hash;
+        try { hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(script))); }
+        catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
+        Files.writeString(log, "Script: " + script + "\nSHA-256: " + hash + "\n", StandardCharsets.UTF_8);
+        System.out.println("Preparando MySQL: " + action + "\nScript: " + script + "\nSHA-256: " + hash + "\nLog: " + log);
+        Process process = new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(log.toFile())).start();
         try {
             if (!process.waitFor(Duration.ofMinutes(action.equals("install") ? 15 : 2).toMillis(), TimeUnit.MILLISECONDS)) {
                 process.destroy(); throw new IOException("Tempo excedido no script " + action + "; consulte " + log);
             }
         } catch (InterruptedException e) { process.destroy(); Thread.currentThread().interrupt(); throw e; }
         String output = Files.readString(log, StandardCharsets.UTF_8);
-        if (process.exitValue() != 0) throw new IOException("Script " + action + ": código de saída " + process.exitValue() + "\n" + output);
+        if (process.exitValue() != 0) throw new ScriptFailure(process.exitValue(), "Script " + action + ": código de saída " + process.exitValue() + "\nLog: " + log + "\n" + output);
         return output.strip();
     }
 

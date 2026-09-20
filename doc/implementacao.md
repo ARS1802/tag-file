@@ -29,11 +29,14 @@ No IntelliJ, mantenha `src` como **Sources Root** e o Connector/J nas dependênc
 1. Selecione a classe principal `Main` e um JDK compatível com o alvo do projeto (a configuração atual do IntelliJ usa Java 24).
 2. Deixe **Program arguments** vazio para abrir o aplicativo e **Working directory** na raiz do projeto.
 3. Execute **Run**. A compilação do IntelliJ precede a inicialização do Java; a janela principal só aparece depois da preparação do MySQL e da conexão JDBC.
-4. Se for necessária a instalação, o Windows solicita UAC e abre um console PowerShell elevado com o progresso. Em caso de falha, leia o diagnóstico e pressione Enter para devolver o resultado ao Java, que apresenta o diálogo de erro.
+4. Se faltar a instalação, confirme **Preparar** no diálogo. No Windows, o pacote portátil é preparado com a conta atual, sem UAC; o console Run informa o log. Para apresentar sem rede, siga [Windows portátil](windows-portatil.md).
 
-Se a janela principal ainda não aparecer, observe a janela PowerShell e o console **Run**: o executor informa o script solicitado e o caminho de seu log. A opção `--build` seleciona apenas a compilação elevada; sua existência não comprova que seja a causa de uma execução que continua aguardando.
+Se a janela principal ainda não aparecer, observe o console **Run** e o log informado: o executor informa o script solicitado e o caminho de seu log. A opção `--build` seleciona apenas a compilação elevada; sua existência não comprova que seja a causa de uma execução que continua aguardando.
 
 ## Execução de scripts com elevação
+
+Esta seção descreve `Main --build` e a instalação Linux. A instalação portátil
+Windows usa a conta atual e está descrita em [Windows portátil](windows-portatil.md).
 
 `Main.executeScriptWithElevation(Path, String...)` delega a execução ao serviço `ElevatedScriptExecutor`:
 
@@ -45,7 +48,7 @@ São dois pontos de entrada:
 | Ação | Como executar |
 |---|---|
 | Compilar com elevação | Execute `Main --build`. O script usado é `scripts/build.sh` ou `scripts/build.ps1`. Ao terminar, esse comando encerra; a aplicação é aberta em uma nova execução de `Main`. |
-| Instalar MySQL quando faltar | Execute `Main` normalmente. A verificação do ambiente chama o método de elevação apenas quando precisa executar `database/scripts/linux/install.sh` ou `database/scripts/windows/install.ps1`. Cancelar a autorização interrompe a inicialização. |
+| Instalar MySQL quando faltar | Execute `Main` normalmente. Após consentimento na interface, Linux usa o executor elevado; Windows executa `database/scripts/windows/install.ps1` com a conta atual. Cancelar a confirmação interrompe a inicialização. |
 
 Com o JDK no PATH, solicite a compilação elevada assim:
 
@@ -71,7 +74,7 @@ Verificações anteriores da integração confirmaram a ordem instalar → inici
 
 Copie `database/config/database.properties.example` para `database/config/database.properties` se o arquivo real ainda não existir. Inclua o [Connector/J em lib](../lib/README.md) e no classpath. Configuração local, JAR, dados e binários não são versionados.
 
-A aplicação exige ambiente gráfico. Na abertura, verifica e prepara a instância MySQL exclusiva do projeto. Se os executáveis estiverem ausentes, solicita autorização nativa do sistema para executar a instalação portátil. Cancelar essa confirmação encerra a inicialização. Dependências nativas do MySQL precisam estar disponíveis no sistema; veja [instalação e execução](instalacao-e-execucao.md).
+A aplicação exige ambiente gráfico. Na abertura, verifica e prepara a instância MySQL exclusiva do projeto. Se os executáveis estiverem ausentes, solicita consentimento na interface para preparar o pacote; somente no Linux a instalação continua usando autorização nativa do sistema. Cancelar essa confirmação encerra a inicialização. Dependências nativas do MySQL precisam estar disponíveis no sistema; veja [instalação e execução](instalacao-e-execucao.md).
 
 O fluxo atual é:
 

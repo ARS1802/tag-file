@@ -24,7 +24,7 @@ O driver Java não contém o servidor. Um DAO não precisa iniciar o cliente mys
 
 | Plataforma | Scripts | Autorização prevista |
 |---|---|---|
-| Windows | PowerShell, arquivos .ps1. | Autorização pelo UAC para baixar/extrair o pacote portátil; sem registrar serviço global. |
+| Windows | PowerShell, arquivos .ps1. | Confirmação na interface; pacote portátil preparado com a conta atual, sem UAC ou serviço global. Consulte [Windows portátil](windows-portatil.md). |
 | Ubuntu e Linux Mint | Bash, arquivos .sh. | Autorização pelo agente polkit, via pkexec, para baixar/extrair o pacote portátil; sem alterar pacotes do sistema. |
 
 Ao abrir, o aplicativo verifica os componentes necessários de cliente e servidor MySQL. Se faltarem, solicita autorização para instalar. ProcessBuilder é o recurso definido para iniciar scripts/processos externos pelo Java.

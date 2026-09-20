@@ -33,3 +33,6 @@ bin/
 database/runtime/
 database/config/database.properties
 lib/*.jar
+
+# Pacote oficial distribuído separadamente para instalação offline.
+database/packages/*.zip
