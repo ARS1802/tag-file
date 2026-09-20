@@ -42,7 +42,7 @@ Mostrar um arquivo na pasta não o cadastra automaticamente. A primeira associa�
 
 ## Tecnologias e objetivo de estudo
 
-O projeto será usado em disciplinas de Ciência da Computação para praticar POO e padrões de projeto. A equipe está aprendendo esses fundamentos. As tecnologias definidas são **Java, Swing e MySQL**, com **JDK 24 como referência**.
+O projeto será usado em disciplinas de Ciência da Computação para praticar POO e padrões de projeto. A equipe está aprendendo esses fundamentos. As tecnologias definidas são **Java, Swing e MySQL**, com **JDK superior à versão 21**.
 
 O aplicativo terá suporte a Windows, Ubuntu e Linux Mint. Observer, DAO, Factory simples e responsabilidades GRASP estão explicados na [arquitetura](arquitetura-e-padroes.md#arq-09). Ainda não há uma rubrica acadêmica com quantidade mínima de padrões ou diagramas obrigatórios.
 

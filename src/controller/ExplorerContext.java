@@ -20,7 +20,7 @@ import manager.LocalFileManager;
 import model.*;
 import persistence.*;
 import service.*;
-import ui.Interaction;
+import GUI.Interaction;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;

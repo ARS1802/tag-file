@@ -96,7 +96,7 @@ TagDAO persiste e reconstrói a Tag com suas extensões; a UI não precisa consu
 
 Os efeitos das exclusões seguem [DEL-01 a DEL-04](requisitos-e-regras.md#del-01). Remover um vínculo preserva a Tag e o arquivo, salvo quando outra operação exige sua exclusão. A limpeza da inicialização segue [CIC-02](requisitos-e-regras.md#cic-02).
 
-ON DELETE CASCADE remove vínculos/extensões quando sua entidade referenciada é excluída; não apaga arquivos físicos nem outras Tags. Não há triggers de produção para datas, disponibilidade, contadores ou sentinela; a coordenação e os DAOs mantêm essas regras. A demonstração de falha usa uma trigger temporária própria, removida ao terminar.
+ON DELETE CASCADE remove vínculos/extensões quando sua entidade referenciada é excluída; não apaga arquivos físicos nem outras Tags. Não há triggers de produção para datas, disponibilidade, contadores ou sentinela; a coordenação e os DAOs mantêm essas regras. A verificação histórica de 16/09/2026 usou uma trigger temporária para simular falha, removida ao terminar.
 
 <a id="sql-05"></a>
 

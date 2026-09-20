@@ -18,7 +18,7 @@ Uma responsabilidade é o trabalho que uma classe assume. Uma colaboração acon
 | Services | Executar trabalho especializado. | NativeFileService manipula arquivos reais. |
 | DAOs | Ler e gravar dados no SQL. | LocalFileTagDAO persiste uma associação. |
 
-A Screen conhece seus componentes, mas não executa SQL nem operações físicas. O DAO conhece a persistência, mas não manipula arquivos nem publica eventos de UI. Os pacotes implementados usam nomes em minúsculas; a organização completa está no [guia](implementacao.md).
+A Screen conhece seus componentes, mas não executa SQL nem operações físicas. O DAO conhece a persistência, mas não manipula arquivos nem publica eventos de UI. A apresentação foi reunida no pacote `GUI`, com essa capitalização solicitada para o diretório; os demais pacotes usam nomes em minúsculas. A organização completa está no [guia](implementacao.md).
 
 <a id="arq-05"></a>
 

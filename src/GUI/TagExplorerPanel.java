@@ -15,14 +15,14 @@
  * - TagExplorerPanel.onFilesChanged(List<LocalFile> values): Atualiza a apresentação usando o aviso recebido, sem repetir Refresh.
  * - TagExplorerPanel.onDirectoryChanged(NativeDirectory directory, List<NativeDirectory> directories, List<NativeFile> files, Map<Path, LocalFile> registered): Atualiza a pasta de destino recebida da outra apresentação.
  * - TagExplorerPanel.dispose(): Remove inscrição quando a janela descarta o painel.
- * - TagExplorerPanel.getTagList(): Informa lista de etiquetas, para simular Drop e conferir a UI na demonstração.
- * - TagExplorerPanel.getFileList(): Informa lista de resultados, para conferir atualizações na demonstração.
+ * - TagExplorerPanel.getTagList(): Informa lista visual de etiquetas.
+ * - TagExplorerPanel.getFileList(): Informa lista visual de resultados.
  *
  * Consulte: doc/interface-e-fluxos.md — UI-01 a UI-03; doc/arquitetura-e-padroes.md — ARQ-06.
  * Consulte: doc/decisoes-implementacao.md — contratos escolhidos para P-01 a P-13.
  */
 
-package ui;
+package GUI;
 
 import controller.TagExplorerController;
 import filter.*;
@@ -80,6 +80,7 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
      * Pasta atual usada para navegação e colagem.
      */
     private NativeDirectory directory;
+    /** Resumo da quantidade de etiquetas ou resultados exibidos. */
     private final JLabel status = new JLabel(" ");
 
     /**
@@ -190,8 +191,13 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
      * @param panel barra de ações
      * @param text rótulo
      * @param action entrada de Controller correspondente
+     * @return botão incluído na barra de ações
      */
     private static JButton addButton(JPanel panel, String text, Runnable action) { JButton button = new JButton(text); button.addActionListener(e -> action.run()); panel.add(button); return button; }
+    /**
+     * Destaca visualmente uma ação de exclusão.
+     * @param button botão que representa a ação destrutiva
+     */
     private static void styleDestructive(JButton button) { button.setForeground(new Color(0xB0, 0x00, 0x20)); }
     /**
      * Aplica a fotografia de Tags sem iniciar outra consulta ou Refresh.
@@ -229,15 +235,15 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
      */
     public void dispose() { events.unsubscribe(this); }
     /**
-     * Informa lista de etiquetas, para simular Drop e conferir a UI na demonstração.
+     * Informa lista visual de etiquetas.
      *
-     * @return lista de etiquetas, para simular Drop e conferir a UI na demonstração
+     * @return lista visual de etiquetas
      */
     public JList<Tag> getTagList() { return tags; }
     /**
-     * Informa lista de resultados, para conferir atualizações na demonstração.
+     * Informa lista visual de resultados.
      *
-     * @return lista de resultados, para conferir atualizações na demonstração
+     * @return lista visual de resultados
      */
     public JList<LocalFile> getFileList() { return files; }
 }

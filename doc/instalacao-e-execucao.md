@@ -8,7 +8,7 @@ O Tag-File usa uma instância MySQL local, administrada pela aplicação por scr
 
 | Peça | Papel |
 |---|---|
-| JDK | Ferramentas e ambiente Java usados para desenvolver e executar a aplicação. A referência do projeto é o JDK 24. |
+| JDK | Ferramentas e ambiente Java usados para desenvolver e executar a aplicação. Deve ser superior à versão 21. |
 | JDBC | API Java de acesso a banco, com tipos como Connection, PreparedStatement, ResultSet, DriverManager e SQLException. |
 | MySQL Connector/J | Driver que permite à aplicação conversar com MySQL pela API JDBC. |
 | Servidor mysqld | Processo que mantém o banco disponível para conexões. |
@@ -24,10 +24,12 @@ O driver Java não contém o servidor. Um DAO não precisa iniciar o cliente mys
 
 | Plataforma | Scripts | Autorização prevista |
 |---|---|---|
-| Windows | PowerShell, arquivos .ps1. | Confirmação para baixar/extrair o pacote portátil; sem registrar serviço global. |
-| Ubuntu e Linux Mint | Bash, arquivos .sh. | Confirmação para baixar/extrair o pacote portátil; sem alterar pacotes do sistema. |
+| Windows | PowerShell, arquivos .ps1. | Autorização pelo UAC para baixar/extrair o pacote portátil; sem registrar serviço global. |
+| Ubuntu e Linux Mint | Bash, arquivos .sh. | Autorização pelo agente polkit, via pkexec, para baixar/extrair o pacote portátil; sem alterar pacotes do sistema. |
 
 Ao abrir, o aplicativo verifica os componentes necessários de cliente e servidor MySQL. Se faltarem, solicita autorização para instalar. ProcessBuilder é o recurso definido para iniciar scripts/processos externos pelo Java.
+
+`Main.executeScriptWithElevation` é o ponto que delega a autorização ao sistema; `Application` fornece esse método ao `DatabaseManager` como executor da instalação. A mesma função é usada por `Main --build` para compilar com autorização nativa. O Java não recebe senhas. Consulte [comandos e detalhes](implementacao.md#execução-de-scripts-com-elevação).
 
 Recusa ou cancelamento não representa instalação concluída. A elevação para instalar não exige manter a UI permanentemente como administrador. A preparação deve respeitar as outras instalações MySQL da máquina.
 
@@ -130,7 +132,7 @@ flowchart TD
     M --> V["Disponibilizar exploradores"]
 ```
 
-O diagrama apresenta o fluxo funcional. Na primeira preparação, cria-se a estrutura inicial; nas seguintes, reutilizam-se os dados. O Manager confere tabelas, chaves e tipos; estrutura incompatível gera erro sem apagar dados. Esperas e identificação da instância estão registradas em P-11. Nos modos de demonstração, a limpeza de domínio só é exercitada quando não atinge cadastros externos ao cenário, conforme [o guia](implementacao.md).
+O diagrama apresenta o fluxo funcional. Na primeira preparação, cria-se a estrutura inicial; nas seguintes, reutilizam-se os dados. O Manager confere tabelas, chaves e tipos; estrutura incompatível gera erro sem apagar dados. Esperas e identificação da instância estão registradas em P-11. `Application.start()` chama `LocalFileManager.initialize()` uma vez por sessão, realizando a limpeza de cadastros órfãos ou apenas com a sentinela e sincronizando os restantes. O fechamento libera JDBC e encerra o servidor exclusivo, preservando cadastros, Tags e arquivos físicos. Consulte [o guia de execução](implementacao.md).
 
 **Inicializar os dados** e **iniciar o servidor** são operações diferentes. Uma falha de conexão não autoriza apagar o diretório, reinicializar o banco ou iniciar outro servidor com o mesmo conjunto de dados.
 
@@ -150,7 +152,7 @@ Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausent
 
 ## JDK, JDBC e inclusão do driver
 
-O ambiente de referência é **JDK 24**, sem Maven. JDBC faz parte da API Java; o Connector/J **9.7.0** é incluído manualmente como JAR. A implementação foi executada com MySQL **8.4.9**; fontes de compatibilidade estão no [registro P-11](decisoes-implementacao.md).
+O projeto requer **JDK superior à versão 21**, sem Maven. JDBC faz parte da API Java; o Connector/J **9.7.0** é incluído manualmente como JAR. A implementação foi executada com MySQL **8.4.9**; fontes de compatibilidade estão no [registro P-11](decisoes-implementacao.md).
 
 ```text
 lib/

@@ -13,7 +13,7 @@
  * Consulte: doc/decisoes-implementacao.md — contratos escolhidos para P-01 a P-13.
  */
 
-package ui;
+package GUI;
 
 import java.nio.file.Path;
 import java.util.List;

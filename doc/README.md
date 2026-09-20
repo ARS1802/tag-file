@@ -6,7 +6,7 @@ O Tag-File é um aplicativo desktop didático para navegar pelos arquivos da má
 
 ## Situação do projeto
 
-Os 24 tipos do desenho, Main, schema e scripts estão implementados. Consulte [compilação e exemplos](implementacao.md), [decisões desta implementação](decisoes-implementacao.md) e a [matriz de verificação](verificacao.md). A implementação e os testes foram executados em Linux; a execução dos scripts Windows continua não verificada. As páginas de desenho ajudam a entender os requisitos, e o registro da implementação fixa os detalhes antes abertos.
+Os tipos do desenho, a interface, o schema e os scripts estão implementados. `Main` inicia a sessão por `application.Application`; a janela e os componentes visuais ficam em `src/GUI`. Consulte [compilação e organização do código](implementacao.md), [decisões desta implementação](decisoes-implementacao.md) e a [matriz histórica de verificação](verificacao.md). A execução dos scripts Windows continua não verificada. As páginas de desenho ajudam a entender os requisitos, e o registro da implementação fixa os detalhes antes abertos.
 
 <a id="doc-02"></a>
 

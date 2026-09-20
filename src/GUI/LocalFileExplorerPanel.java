@@ -23,13 +23,13 @@
  * - LocalFileExplorerPanel.onFilesChanged(List<LocalFile> matches): Atualiza a apresentação usando o aviso recebido, sem repetir Refresh.
  * - LocalFileExplorerPanel.onDirectoryChanged(NativeDirectory directory, List<NativeDirectory> subdirectories, List<NativeFile> nativeFiles, Map<Path, LocalFile> registered): Atualiza componentes, revela a pasta atual na árvore fixa e a contagem de arquivos exibidos.
  * - LocalFileExplorerPanel.dispose(): Remove a inscrição ao descartar a janela.
- * - LocalFileExplorerPanel.getFileList(): Informa lista física para verificações da demonstração.
+ * - LocalFileExplorerPanel.getFileList(): Informa lista visual de arquivos físicos.
  *
  * Consulte: doc/interface-e-fluxos.md — UI-01 a UI-03; doc/arquitetura-e-padroes.md — ARQ-06/ARQ-07.
  * Consulte: doc/decisoes-implementacao.md — contratos escolhidos para P-01 a P-13.
  */
 
-package ui;
+package GUI;
 
 import controller.LocalFileExplorerController;
 import filter.NativeFileFilter;
@@ -311,9 +311,9 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
      */
     public void dispose() { events.unsubscribe(this); }
     /**
-     * Informa lista física para verificações da demonstração.
+     * Informa lista visual de arquivos físicos.
      *
-     * @return lista física para verificações da demonstração
+     * @return lista visual de arquivos físicos
      */
     public JList<NativeFile> getFileList() { return files; }
 

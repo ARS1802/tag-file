@@ -11,5 +11,16 @@ O Connector/J 9.7.0 suporta MySQL 8.0 ou posterior e JDBC 4.2, segundo as
 Esta implementação foi executada com JDK 24.0.2, MySQL 8.4.9 e esse JAR.
 Compilar usa apenas a API JDBC do JDK; conectar ao servidor exige o driver no classpath.
 
-No IntelliJ, adicione o JAR em **Project Structure → Modules → Dependencies**.
+O módulo `tag-file.iml` já inclui este JAR nas dependências do IntelliJ. Ele aparece em
+**Project Structure → Modules → Dependencies** como **MySQL Connector/J 9.7.0**.
 Nos comandos: `-cp 'out/classes:lib/*'` no Linux e `-cp 'out/classes;lib/*'` no Windows.
+
+Download conferido em 20/09/2026, com SHA-256 igual ao publicado no Maven Central:
+
+```text
+0353648eaa1c91e0f4020c959abf756bc866ffd583df22ae6b6f6e0cbd43eb44
+```
+
+O driver foi carregado automaticamente pelo `DriverManager` tanto no Java 21.0.12
+quanto no Java 24.0.2, sem abrir conexão com o banco. A necessidade de versão do
+Java para o código da aplicação está na [análise de compatibilidade](../doc/compatibilidade-java.md).

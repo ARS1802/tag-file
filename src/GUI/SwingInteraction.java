@@ -20,7 +20,7 @@
  * Consulte: doc/decisoes-implementacao.md — contratos escolhidos para P-01 a P-13.
  */
 
-package ui;
+package GUI;
 
 import service.ActionGate;
 import java.awt.*;

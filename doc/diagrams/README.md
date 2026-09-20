@@ -62,7 +62,7 @@ O diagrama principal apresenta as dependências mais relevantes; ele não preten
 | Preparação do banco e da sessão | [04-ambiente](fluxo-classes/04-ambiente.mmd) | [SVG](svg/fluxo-classes/04-ambiente.svg) | [doc/instalacao-e-execucao.md:L111-L168](../instalacao-e-execucao.md#amb-04) |
 | Factory, composição, DAO e filtros | [05-contratos-e-criacao](fluxo-classes/05-contratos-e-criacao.mmd) | [SVG](svg/fluxo-classes/05-contratos-e-criacao.svg) | [doc/arquitetura-e-padroes.md:L103-L140](../arquitetura-e-padroes.md#arq-02), [doc/interface-e-fluxos.md:L63-L96](../interface-e-fluxos.md#exp-02) |
 
-`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes ilustrativos da revisão original; não fixam assinaturas. A implementação usa Panels observadores e fotografias imutáveis, conforme P-04/P-05. As chamadas diretas seguem DEC-01. A tabela [tipo → arquivo → exemplo](../implementacao.md) aponta para as APIs e demonstrações efetivas.
+`refreshAll`, `cleanupOrphans`, `onFileChanged`, `onTagChanged` e `onFileTagsChanged` são nomes ilustrativos da revisão original; não fixam assinaturas. A implementação usa Panels observadores e fotografias imutáveis, conforme P-04/P-05. As chamadas diretas seguem DEC-01. O [guia de implementação](../implementacao.md) aponta para os pacotes, a interface e a inicialização atuais.
 
 ## Registro da verificação original
 

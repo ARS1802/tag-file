@@ -5,6 +5,8 @@
  *
  * Construtores e métodos declarados (inclusive privados e implementações anônimas):
  * - DatabaseManager.DatabaseManager(Path root): Define a raiz que contém configuração, scripts e runtime.
+ * - DatabaseManager.DatabaseManager(Path root, Installer installer): Injeta a execução autorizada da instalação.
+ * - Installer.install(Path script, String authorizationArgument): Executa o instalador após autorização nativa.
  * - DatabaseManager.inspect(): Inspeciona configuração, driver e executáveis; não instala/inicia/encerra servidor.
  * - DatabaseManager.prepare(boolean installationAuthorized): Verifica componentes; instalar requer autorização explícita do chamador/UI.
  * - DatabaseManager.runScript(String action, boolean authorized): Executa apenas scripts distribuídos; credenciais nunca vão nos argumentos.
@@ -38,6 +40,21 @@ public final class DatabaseManager {
      * Raiz absoluta do projeto para configuração, scripts e dados exclusivos.
      */
     private final Path root;
+    /** Instalação com autorização nativa; null mantém a execução administrativa direta. */
+    private final Installer installer;
+
+    /** Fronteira usada pela entrada da aplicação para solicitar autorização ao sistema. */
+    @FunctionalInterface
+    public interface Installer {
+        /**
+         * Executa somente o instalador fornecido pelo projeto.
+         * @param script caminho absoluto do instalador
+         * @param authorizationArgument argumento explícito de autorização do script
+         * @throws IOException se autorização ou instalação falhar
+         * @throws InterruptedException se a espera for interrompida
+         */
+        void install(Path script, String authorizationArgument) throws IOException, InterruptedException;
+    }
     /**
      * Define a raiz que contém configuração, scripts e runtime.
      *
@@ -45,7 +62,18 @@ public final class DatabaseManager {
      * @throws IllegalArgumentException se scripts não estiverem presentes
      */
     public DatabaseManager(Path root) {
+        this(root, null);
+    }
+
+    /**
+     * Define a raiz e o executor que solicita autorização para instalar.
+     * @param root raiz existente do projeto
+     * @param installer executor nativo; null para administração direta já autorizada
+     * @throws IllegalArgumentException se scripts não estiverem presentes
+     */
+    public DatabaseManager(Path root, Installer installer) {
         this.root = root.toAbsolutePath().normalize();
+        this.installer = installer;
         if (!Files.isDirectory(this.root.resolve("database/scripts"))) throw new IllegalArgumentException("Execute a partir da raiz do Tag-File");
     }
 
@@ -93,6 +121,11 @@ public final class DatabaseManager {
         if (!Set.of("check", "install", "initialize", "start", "stop").contains(action)) throw new IllegalArgumentException("Script desconhecido");
         boolean windows = System.getProperty("os.name").startsWith("Windows");
         Path script = root.resolve("database/scripts/" + (windows ? "windows/" : "linux/") + action + (windows ? ".ps1" : ".sh"));
+        if (action.equals("install") && installer != null) {
+            if (!authorized) throw new IOException("Instalação não autorizada");
+            installer.install(script, windows ? "-Authorized" : "--authorized");
+            return "Instalação autorizada concluída";
+        }
         List<String> command = new ArrayList<>(windows ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString()) : List.of("bash", script.toString()));
         if (authorized) command.add(windows ? "-Authorized" : "--authorized");
         Files.createDirectories(root.resolve("database/runtime/logs"));

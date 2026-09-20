@@ -2,6 +2,10 @@ $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 $Compiler = if ($env:TAG_FILE_JDK) { Join-Path $env:TAG_FILE_JDK 'bin/javac.exe' } else { 'javac' }
 $DocTool = if ($env:TAG_FILE_JDK) { Join-Path $env:TAG_FILE_JDK 'bin/javadoc.exe' } else { 'javadoc' }
+# Evita manter classes e páginas de tipos removidos ou renomeados.
+foreach ($OutputDirectory in @('out/classes', 'out/javadoc')) {
+    if (Test-Path $OutputDirectory) { Remove-Item -Recurse -Force $OutputDirectory }
+}
 New-Item -ItemType Directory -Force out/classes, out/javadoc, lib | Out-Null
 $sources = Get-ChildItem src -Recurse -Filter '*.java' | Sort-Object FullName | ForEach-Object { '"' + $_.FullName.Replace('\','/') + '"' }
 [IO.File]::WriteAllLines((Join-Path (Get-Location) 'out/sources.txt'), $sources, (New-Object Text.UTF8Encoding $false))

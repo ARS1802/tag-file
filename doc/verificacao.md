@@ -1,5 +1,7 @@
 # Verificação da implementação — 16/09/2026
 
+> Registro histórico da implementação incorporada no commit `6247818`. Os modos de teste e demonstração de `Main` citados abaixo foram removidos na reorganização de 20/09/2026. Para executar a aplicação atual, consulte [implementação](implementacao.md); estes resultados não representam uma nova execução da versão reorganizada.
+
 Investigação/verificação em profundidade de trabalho, a partir da revisão `7a815cac76b94409f5165b7b689cf07c02bf1ef9`. O checkout inicial continha apenas `Main` com Hello World e documentação; não havia alterações locais a preservar além desses arquivos versionados. As verificações abaixo se referem às alterações de trabalho, ainda sem commit.
 
 Ambiente executado: Linux Mint 22.3 x86_64, Amazon Corretto **24.0.2**, MySQL portátil **8.4.9**, Connector/J **9.7.0**. A instalação MySQL global permaneceu fora das operações. Os testes JDBC usam servidor real, schema real e conexão compartilhada; apenas respostas de diálogos e a recusa de instalação têm dublês identificados.

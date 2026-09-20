@@ -35,7 +35,7 @@ import filter.*;
 import model.*;
 import persistence.*;
 import service.*;
-import ui.Interaction;
+import GUI.Interaction;
 import java.io.IOException;
 import java.nio.file.*;
 import java.sql.SQLException;

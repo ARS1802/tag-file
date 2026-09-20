@@ -7,7 +7,7 @@
  * - FileTransferHandler.FileTransferHandler(ActionGate gate, BiConsumer<List<Path>, UUID> association): Configura exportação de arquivos ou recepção sobre Tag.
  * - FileTransferHandler.getSourceActions(JComponent component): Indica transferência de referências, sem movimentação física durante Drag.
  * - FileTransferHandler.createTransferable(JComponent component): Exporta referências selecionadas no formato de lista de arquivos do sistema.
- * - FileTransferHandler.transfer(List<Path> paths): Cria dados de transferência sem mover/classificar arquivos; usado também pela demonstração.
+ * - FileTransferHandler.transfer(List<Path> paths): Cria dados de transferência sem mover/classificar arquivos.
  * - Transferable (anônima).getTransferDataFlavors(): Informa o formato de transferência de lista de arquivos.
  * - Transferable (anônima).isDataFlavorSupported(DataFlavor flavor): Verifica se o formato solicitado é lista de arquivos.
  * - Transferable (anônima).getTransferData(DataFlavor flavor): Entrega a lista imutável de arquivos no formato suportado.
@@ -18,7 +18,7 @@
  * Consulte: doc/decisoes-implementacao.md — contratos escolhidos para P-01 a P-13.
  */
 
-package ui;
+package GUI;
 
 import model.*;
 import service.ActionGate;
@@ -80,7 +80,7 @@ public final class FileTransferHandler extends TransferHandler {
     }
 
     /**
-     * Cria dados de transferência sem mover/classificar arquivos; usado também pela demonstração.
+     * Cria dados de transferência sem mover/classificar arquivos.
      *
      * @param paths arquivos selecionados
      * @return objeto compatível com javaFileListFlavor
