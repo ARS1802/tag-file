@@ -29,6 +29,7 @@ import filter.*;
 import model.*;
 import service.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,7 +60,14 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
     /**
      * Lista visual de Tags identificadas pelo UUID.
      */
-    private final JList<Tag> tags = new JList<>(new DefaultListModel<>());
+    private final JList<Tag> tags = new JList<>(new DefaultListModel<>()) {
+        @Override public String getToolTipText(MouseEvent event) {
+            int index = locationToIndex(event.getPoint());
+            if (index < 0) return super.getToolTipText(event);
+            Tag tag = getModel().getElementAt(index);
+            return tag == null ? super.getToolTipText(event) : tag.toString();
+        }
+    };
     /**
      * Lista visual de cadastros resultantes da pesquisa.
      */
@@ -72,6 +80,7 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
      * Pasta atual usada para navegação e colagem.
      */
     private NativeDirectory directory;
+    private final JLabel status = new JLabel(" ");
 
     /**
      * Monta e inscreve a apresentação na EDT, sem consultar SQL no construtor.
@@ -90,42 +99,62 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
         files.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JPanel tagActions = new JPanel(new GridLayout(0, 3, 4, 4));
         addButton(tagActions, "Nova etiqueta", () -> dialogs.observe(controller.createTag()));
-        addButton(tagActions, "Editar", () -> withTag(t -> dialogs.observe(controller.editTag(t.getId()))));
-        addButton(tagActions, "Excluir etiqueta…", () -> withTag(t -> dialogs.observe(controller.deleteTag(t.getId()))));
-        addButton(tagActions, "Associar arquivos…", () -> withTag(t -> dialogs.observe(controller.selectAndAssociate(t.getId()))));
-        addButton(tagActions, "Disponíveis", () -> withTag(t -> dialogs.observe(controller.countAvailable(t.getId()))));
+        JButton editTagButton = addButton(tagActions, "Editar", () -> withTag(t -> dialogs.observe(controller.editTag(t.getId()))));
+        JButton deleteTagButton = addButton(tagActions, "Excluir etiqueta…", () -> withTag(t -> dialogs.observe(controller.deleteTag(t.getId()))));
+        styleDestructive(deleteTagButton);
+        JButton associateButton = addButton(tagActions, "Associar arquivos…", () -> withTag(t -> dialogs.observe(controller.selectAndAssociate(t.getId()))));
+        JButton availableButton = addButton(tagActions, "Disponíveis", () -> withTag(t -> dialogs.observe(controller.countAvailable(t.getId()))));
         JCheckBox empty = new JCheckBox("Somente etiquetas vazias"); empty.addActionListener(e -> dialogs.observe(controller.filterTags(new TagFilter(empty.isSelected(), null, null)))); tagActions.add(empty);
         add(tagActions, BorderLayout.NORTH);
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(tags), new JScrollPane(files)); split.setResizeWeight(.32); add(split, BorderLayout.CENTER);
         JPanel actions = new JPanel(new GridLayout(0, 3, 4, 4)); actions.add(mode);
         addButton(actions, "Pesquisar", this::search);
-        addButton(actions, "Abrir", () -> withFile(f -> dialogs.observe(controller.open(f.getNativeFile()))));
-        addButton(actions, "Localizar", () -> withFile(f -> dialogs.observe(controller.locate(f.getNativeFile()))));
-        addButton(actions, "Copiar", () -> copy(false)); addButton(actions, "Recortar", () -> copy(true));
+        JButton openButton = addButton(actions, "Abrir", () -> withFile(f -> dialogs.observe(controller.open(f.getNativeFile()))));
+        JButton locateButton = addButton(actions, "Localizar", () -> withFile(f -> dialogs.observe(controller.locate(f.getNativeFile()))));
+        JButton copyButton = addButton(actions, "Copiar", () -> copy(false));
+        JButton cutButton = addButton(actions, "Recortar", () -> copy(true));
         addButton(actions, "Colar na pasta local", () -> dialogs.observe(controller.paste(directory)));
-        addButton(actions, "Renomear", () -> withFile(f -> dialogs.observe(controller.rename(f.getNativeFile()))));
-        addButton(actions, "Apagar arquivo…", () -> withFile(f -> dialogs.observe(controller.deleteFile(f.getNativeFile()))));
-        addButton(actions, "Retirar etiqueta", () -> withFile(f -> withTag(t -> dialogs.observe(controller.removeTag(f.getId(), t.getId())))));
-        add(actions, BorderLayout.SOUTH);
+        JButton renameButton = addButton(actions, "Renomear", () -> withFile(f -> dialogs.observe(controller.rename(f.getNativeFile()))));
+        JButton deleteFileButton = addButton(actions, "Apagar arquivo…", () -> withFile(f -> dialogs.observe(controller.deleteFile(f.getNativeFile()))));
+        styleDestructive(deleteFileButton);
+        JButton removeTagButton = addButton(actions, "Retirar etiqueta", () -> withFile(f -> withTag(t -> dialogs.observe(controller.removeTag(f.getId(), t.getId())))));
+        JPanel southWrap = new JPanel(new BorderLayout(4, 4));
+        southWrap.add(actions, BorderLayout.CENTER);
+        southWrap.add(status, BorderLayout.SOUTH);
+        add(southWrap, BorderLayout.SOUTH);
+
+        List<JButton> tagDependent = List.of(editTagButton, deleteTagButton, associateButton, availableButton);
+        List<JButton> fileDependent = List.of(openButton, locateButton, copyButton, cutButton, renameButton, deleteFileButton);
+        Runnable updateEnabled = () -> {
+            boolean hasTag = tags.getSelectedValue() != null;
+            boolean hasFile = files.getSelectedValue() != null;
+            tagDependent.forEach(b -> b.setEnabled(hasTag));
+            fileDependent.forEach(b -> b.setEnabled(hasFile));
+            removeTagButton.setEnabled(hasTag && hasFile);
+        };
+        tags.addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) updateEnabled.run(); });
+        files.addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) updateEnabled.run(); });
+        updateEnabled.run();
         SwingInteraction.bind(this, "ctrl C", "copy", () -> copy(false)); SwingInteraction.bind(this, "ctrl X", "cut", () -> copy(true));
         SwingInteraction.bind(this, "ctrl V", "paste", () -> dialogs.observe(controller.paste(directory)));
         SwingInteraction.bind(this, "F2", "rename", () -> withFile(f -> dialogs.observe(controller.rename(f.getNativeFile()))));
         tags.setTransferHandler(new FileTransferHandler(gate, (paths, id) -> dialogs.observe(controller.associate(paths, id)))); tags.setDropMode(DropMode.ON);
         files.setTransferHandler(new FileTransferHandler(gate, null)); if (!GraphicsEnvironment.isHeadless()) files.setDragEnabled(true);
         tags.setCellRenderer(new DefaultListCellRenderer() {
-            /**
-             * Prepara o rótulo visual sem acessar disco ou SQL.
-             *
-             * @param list lista
-             * @param value Tag
-             * @param index posição
-             * @param selected seleção
-             * @param focused foco
-             * @return rótulo com cor, nome e UUID
-             */
             @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focused) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focused);
-                if (value instanceof Tag tag && !selected) label.setForeground(Color.decode(tag.getColor())); return label;
+                if (value instanceof Tag tag) {
+                    label.setText(tag.getName());
+                    Color color = Color.decode(tag.getColor());
+                    label.setIcon(new Icon() {
+                        @Override public void paintIcon(Component c, Graphics g, int x, int y) { g.setColor(color); g.fillOval(x, y + 3, 10, 10); }
+                        @Override public int getIconWidth() { return 16; }
+                        @Override public int getIconHeight() { return 16; }
+                    });
+                    if (tag.isMissing()) label.setFont(label.getFont().deriveFont(Font.ITALIC));
+                    if (!selected) label.setForeground(color);
+                }
+                return label;
             }
         });
         events.subscribe(this);
@@ -162,8 +191,8 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
      * @param text rótulo
      * @param action entrada de Controller correspondente
      */
-    private static void addButton(JPanel panel, String text, Runnable action) { JButton button = new JButton(text); button.addActionListener(e -> action.run()); panel.add(button); }
-
+    private static JButton addButton(JPanel panel, String text, Runnable action) { JButton button = new JButton(text); button.addActionListener(e -> action.run()); panel.add(button); return button; }
+    private static void styleDestructive(JButton button) { button.setForeground(new Color(0xB0, 0x00, 0x20)); }
     /**
      * Aplica a fotografia de Tags sem iniciar outra consulta ou Refresh.
      *
@@ -174,6 +203,7 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
         DefaultListModel<Tag> model = (DefaultListModel<Tag>) tags.getModel(); model.clear(); model.addAll(values);
         for (int i = 0; i < model.size(); i++) if (selected.contains(model.get(i).getId())) tags.addSelectionInterval(i, i);
         tags.setToolTipText(values.isEmpty() ? "Nenhuma etiqueta corresponde ao filtro" : "Solte arquivos sobre uma etiqueta para associar");
+        status.setText(values.size() + (values.size() == 1 ? " etiqueta" : " etiquetas"));
     }
     /**
      * Atualiza a apresentação usando o aviso recebido, sem repetir Refresh.
@@ -183,6 +213,7 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
     @Override public void onFilesChanged(List<LocalFile> values) {
         LocalFile selected = files.getSelectedValue(); DefaultListModel<LocalFile> model = (DefaultListModel<LocalFile>) files.getModel(); model.clear(); model.addAll(values);
         if (selected != null) files.setSelectedValue(selected, true); files.setToolTipText(values.isEmpty() ? "Nenhum arquivo corresponde à pesquisa" : null);
+        status.setText(values.size() + (values.size() == 1 ? " arquivo encontrado" : " arquivos encontrados"));
     }
     /**
      * Atualiza a pasta de destino recebida da outra apresentação.

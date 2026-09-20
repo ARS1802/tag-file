@@ -7,6 +7,7 @@
  * - SwingInteraction.SwingInteraction(Component parent): Injeta os colaboradores necessários a SwingInteraction.
  * - SwingInteraction.choose(String message, String[] options): Exibe alternativas na EDT; o loop modal mantém eventos dos diálogos responsivos.
  * - SwingInteraction.text(String message, String initial): Obtém texto por diálogo na EDT, preservando o cancelamento.
+ * - SwingInteraction.color(String message, String initial): Abre um seletor de cor nativo em vez de pedir o código hexadecimal digitado.
  * - SwingInteraction.files(boolean multiple, Set<String> extensions): Usa JFileChooser e filtro visual; o Manager ainda valida Drop e extensões compostas.
  * - SwingInteraction.showFailure(Throwable failure): Apresenta falha real com área técnica expansível; senhas de parâmetros são ocultadas.
  * - SwingInteraction.redact(String text): Oculta valores de senha em mensagens técnicas antes de apresentá-las.
@@ -65,6 +66,21 @@ public final class SwingInteraction implements Interaction {
      * @return texto ou nulo ao cancelar
      */
     @Override public String text(String message, String initial) { return onEdt(() -> (String) JOptionPane.showInputDialog(parent, message, "Tag-File", JOptionPane.QUESTION_MESSAGE, null, null, initial)); }
+    /**
+     * Abre um seletor de cor nativo em vez de pedir o código hexadecimal digitado.
+     *
+     * @param message propósito da entrada
+     * @param initial cor inicial em #RRGGBB; valor inválido cai para o padrão da aplicação
+     * @return cor escolhida em #RRGGBB, ou nulo ao cancelar
+     */
+    @Override public String color(String message, String initial) {
+        return onEdt(() -> {
+            Color start;
+            try { start = Color.decode(initial); } catch (RuntimeException e) { start = Color.decode("#2864B4"); }
+            Color chosen = JColorChooser.showDialog(parent, message, start);
+            return chosen == null ? null : String.format("#%02X%02X%02X", chosen.getRed(), chosen.getGreen(), chosen.getBlue());
+        });
+    }
     /**
      * Usa JFileChooser e filtro visual; o Manager ainda valida Drop e extensões compostas.
      *

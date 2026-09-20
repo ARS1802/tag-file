@@ -6,6 +6,7 @@
  * Construtores e métodos declarados (inclusive privados e implementações anônimas):
  * - Interaction.choose(String message, String[] options): Solicita escolha explícita antes dos efeitos correspondentes.
  * - Interaction.text(String message, String initial): Solicita uma entrada de texto que pode ser cancelada.
+ * - Interaction.color(String message, String initial): Solicita uma cor; por padrão delega para texto no formato #RRGGBB.
  * - Interaction.files(boolean multiple, Set<String> extensions): Seleciona arquivos reais; escolher pasta no diálogo não importa seu conteúdo.
  *
  * Consulte: doc/interface-e-fluxos.md — UI-01 a UI-03; doc/arquitetura-e-padroes.md — ARQ-06.
@@ -38,6 +39,14 @@ public interface Interaction {
      * @return texto informado ou nulo ao cancelar
      */
     String text(String message, String initial);
+    /**
+     * Solicita uma cor; por padrão delega para texto no formato #RRGGBB.
+     *
+     * @param message finalidade da entrada
+     * @param initial valor inicial em #RRGGBB
+     * @return cor escolhida em #RRGGBB, ou nulo ao cancelar
+     */
+    default String color(String message, String initial) { return text(message, initial); }
     /**
      * Seleciona arquivos reais; escolher pasta no diálogo não importa seu conteúdo.
      *
