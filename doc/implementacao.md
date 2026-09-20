@@ -18,11 +18,11 @@ TAG_FILE_JDK=/caminho/do/jdk bash scripts/build.sh &&
 /caminho/do/jdk/bin/java -cp 'out/classes:lib/*' Main
 ```
 
-Os scripts recompilam todos os fontes de `src` com UTF-8 e o alvo definido em `--release`, geram Javadoc privado com `-Xdoclint:all` e limpam as saídas anteriores de classes/documentação para não conservar tipos removidos ou renomeados. Não alteram o banco.
+Os scripts recompilam todos os fontes de `src` com UTF-8 e o alvo definido em `--release` e geram Javadoc privado com `-Xdoclint:all`. O Bash limpa as saídas antes de compilar; o PowerShell publica novas saídas somente após compilação e documentação bem-sucedidas. Não alteram o banco.
 
 O script Bash confere o suporte ao alvo configurado antes de limpar as saídas anteriores. Se houver erro de versão não suportada, confira `javac -version` e a [configuração de compilação](compatibilidade-java.md#configuração-de-compilação). A configuração do JDK no IntelliJ é independente da seleção feita pelo terminal. `TAG_FILE_JDK` afeta o script de compilação; use explicitamente o `bin/java` do mesmo JDK para executar. O `&&` impede a tentativa de executar `Main` quando a compilação falha.
 
-No Windows, use `powershell -File scripts/build.ps1` e `java -cp 'out/classes;lib/*' Main`. `$env:TAG_FILE_JDK` pode indicar o JDK. A execução no Windows continua não verificada neste ambiente.
+No Windows, use `powershell -NoProfile -File scripts/build.ps1` e, somente após sucesso, `java -cp 'out/classes;lib/*' Main`. `$env:TAG_FILE_JDK` pode indicar o JDK. O build PowerShell usa alvo Java 22, valida as ferramentas antes de substituir saídas e registra logs em `out/build-logs`. Consulte o [contrato, testes e limites do build PowerShell](build-powershell.md). A execução real no Windows continua não verificada neste ambiente.
 
 No IntelliJ, configure um JDK superior à versão 21, mantenha `src` como **Sources Root**, adicione o Connector/J às dependências do módulo e execute a classe `Main`, sem argumentos, com o diretório de trabalho na raiz do projeto.
 

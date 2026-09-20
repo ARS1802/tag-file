@@ -37,11 +37,12 @@ O argumento `--release` determina a versão das APIs disponíveis na compilaçã
 bytecode gerado. O compilador selecionado precisa suportar esse alvo; a versão usada
 para executar a aplicação também precisa ser compatível com os arquivos `.class`.
 
-A atualização do requisito abrange somente a documentação. `scripts/build.sh` e
-`scripts/build.ps1` continuam configurados com `--release 24`, e `.idea/misc.xml`
-seleciona o SDK `corretto-24`. Essas configurações precisam ser alinhadas ao JDK
-escolhido ao mudar o ambiente de compilação. Depois de alterar o alvo, recompile
-os fontes antes de executar a aplicação.
+A atualização inicial do requisito abrangeu somente a documentação. Na correção
+posterior aprovada, `scripts/build.ps1` passou a usar `--release 22` e a conferir
+o JDK antes de substituir os resultados. Veja o [contrato e a verificação do build
+PowerShell](build-powershell.md). `scripts/build.sh` mantém `--release 24`, e
+`.idea/misc.xml` seleciona o SDK `corretto-24`. Confira o alvo do caminho de
+compilação utilizado; depois de alterar o alvo, recompile os fontes antes de executar.
 
 ## Driver JDBC
 

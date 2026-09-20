@@ -110,14 +110,33 @@ public final class ElevatedScriptExecutor {
             String javaHome, String systemRoot) {
         String powershell = Path.of(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe").toString();
         // Mantém caminhos com espaços, apóstrofos e cifrões como dados literais.
-        StringBuilder invocation = new StringBuilder("& ").append(powershellLiteral(powershell))
-                .append(" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ")
-                .append(powershellLiteral(script.toString()));
+        StringBuilder invocation = new StringBuilder("& ").append(powershellLiteral(script.toString()));
         for (String argument : arguments) invocation.append(' ').append(powershellLiteral(argument));
+        // O filho formata exceções completas como texto; argumentos continuam sendo literais.
+        String child = "$ErrorActionPreference='Stop'; [Console]::OutputEncoding=New-Object Text.UTF8Encoding $false; "
+                + "$global:LASTEXITCODE=0; try { " + invocation + "; exit $LASTEXITCODE } "
+                + "catch { [Console]::Error.WriteLine(($_ | Format-List * -Force | Out-String -Width 4096)); exit 1 }";
+        // Captura os canais diretamente pelo .NET. Redirecionar stderr pelo pipeline do
+        // Windows PowerShell 5.1 com Stop pode perder mensagens ou transformar avisos em falhas.
         String elevated = "$ErrorActionPreference='Stop'; $env:TAG_FILE_JDK=" + powershellLiteral(javaHome)
-                + "; try { " + invocation + " *> " + powershellLiteral(log.toString())
-                + "; if ($null -eq $LASTEXITCODE) { exit 0 }; exit $LASTEXITCODE } "
-                + "catch { $_ | Out-File -LiteralPath " + powershellLiteral(log.toString()) + " -Append; exit 1 }";
+                + "; $utf8=New-Object Text.UTF8Encoding $false; $log=" + powershellLiteral(log.toString())
+                + "; $process=New-Object Diagnostics.Process; try { "
+                + "$info=New-Object Diagnostics.ProcessStartInfo; $info.FileName=" + powershellLiteral(powershell)
+                + "; $info.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -OutputFormat Text -EncodedCommand "
+                + encodedCommand(child) + "'; $info.UseShellExecute=$false; $info.CreateNoWindow=$true; "
+                + "$info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true; "
+                + "$info.StandardOutputEncoding=$utf8; $info.StandardErrorEncoding=$utf8; "
+                + "$process.StartInfo=$info; if (!$process.Start()) { throw 'Falha ao iniciar PowerShell filho' }; "
+                + "$stdout=$process.StandardOutput.ReadToEndAsync(); $stderr=$process.StandardError.ReadToEndAsync(); "
+                + "$timedOut=!$process.WaitForExit(840000); if ($timedOut) { $process.Kill(); $process.WaitForExit() }; "
+                + "$output=$stdout.GetAwaiter().GetResult(); $errors=$stderr.GetAwaiter().GetResult(); "
+                + "$code=$process.ExitCode; [IO.File]::WriteAllText($log, "
+                + "('[stdout]'+[Environment]::NewLine+$output+[Environment]::NewLine+'[stderr]'"
+                + "+[Environment]::NewLine+$errors+[Environment]::NewLine+'ExitCode: '+$code), $utf8); "
+                + "if ($timedOut) { throw 'Tempo excedido no script elevado (14 minutos)' }; exit $code } "
+                + "catch { [IO.File]::AppendAllText($log, [Environment]::NewLine+"
+                + "($_ | Format-List * -Force | Out-String -Width 4096), $utf8); exit 1 } "
+                + "finally { $process.Dispose() }";
         String request = "$ErrorActionPreference='Stop'; try { $process=Start-Process -FilePath "
                 + powershellLiteral(powershell)
                 + " -ArgumentList '-NoProfile','-NonInteractive','-EncodedCommand','" + encodedCommand(elevated)
