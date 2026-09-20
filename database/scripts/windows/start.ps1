@@ -1,4 +1,4 @@
-. "$PSScriptRoot/common.ps1"
+﻿. "$PSScriptRoot/common.ps1"
 Assert-Owner
 & mysqladmin "--defaults-extra-file=$ClientConfig" ping 2>$null
 if ($LASTEXITCODE -eq 0) { Assert-Server; exit 0 }

@@ -60,9 +60,10 @@ JDK gerou as classes utilizadas na execução.
   limitada a 15 minutos, incluindo a solicitação de autorização.
 
 Compilar não verifica conexão SQL nem disponibilidade da GUI. O driver JDBC
-continua sendo uma dependência de execução. O instalador do MySQL não foi alterado;
-o erro anterior de `Invoke-WebRequest` precisa de seu diagnóstico completo para
-identificar a causa do download.
+continua sendo uma dependência de execução. Os comandos do instalador do MySQL
+foram preservados; os scripts Windows receberam BOM UTF-8 para leitura correta no
+Windows PowerShell 5.1. O erro anterior de `Invoke-WebRequest` precisa de seu
+diagnóstico completo para identificar a causa do download.
 
 ## Testes reproduzíveis
 
@@ -108,3 +109,32 @@ Logs da verificação local: `/tmp/tag-file-build-contract.log`,
 `/tmp/tag-file-powershell-project-build.log` e `/tmp/tag-file-elevated-capture.log`.
 Esses arquivos temporários não são versionados; os testes acima permitem reproduzir
 as verificações. Sucesso no Linux não deve ser apresentado como certificação Windows.
+
+## Correção posterior: autorização do instalador
+
+O log `tag-file-elevated-10250527699575625213.log.txt` identificou uma regressão
+no executor: a chamada PowerShell recebia `'-Authorized'` como texto posicional.
+Isso deixava `[switch]$Authorized` desativado e causava a exceção da linha 3 do
+instalador, antes de qualquer download. O chamado UAC e o parâmetro lógico de
+autorização do script são etapas distintas.
+
+O executor agora emite o switch conhecido `-Authorized` como parâmetro PowerShell;
+os demais argumentos continuam escapados como valores literais. A guarda do
+instalador permanece ativa. Somente o nome exato desse switch, sem diferenciar
+maiúsculas, recebe esse tratamento: texto com comandos adicionais não é executado.
+
+O log também mostrou mensagens de progresso em CLIXML e acentos corrompidos.
+O executor define `ProgressPreference=SilentlyContinue` antes de carregar módulos,
+em todas as camadas PowerShell. Isso suprime progresso, mantendo erros e códigos.
+Os seis arquivos `.ps1` de `database/scripts/windows` receberam somente o BOM
+UTF-8, sem alterar seus comandos ou regras.
+
+A regressão foi reproduzida antes da correção usando as três primeiras linhas do
+instalador real e seu `common.ps1`, interrompendo a fixture antes do download.
+Após a correção, 49 verificações de captura passaram no PowerShell 7.6.5/Linux:
+incluem autorização, recusa sem autorização, argumento inválido, preservação dos
+acentos e ausência de progresso no log. O projeto e o Javadoc também compilaram.
+UAC real, Windows PowerShell 5.1 e download/instalação MySQL não foram executados.
+
+Logs desta regressão: `/tmp/tag-file-authorization-before.log`,
+`/tmp/tag-file-authorization-after.log` e `/tmp/tag-file-authorization-build.log`.

@@ -109,16 +109,22 @@ public final class ElevatedScriptExecutor {
     private static List<String> windowsCommand(Path script, Path log, String[] arguments,
             String javaHome, String systemRoot) {
         String powershell = Path.of(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe").toString();
-        // Mantém caminhos com espaços, apóstrofos e cifrões como dados literais.
+        // Mantém caminhos/valores como dados. O único switch previsto pelo contrato
+        // de instalação precisa ser um parâmetro, pois '-Authorized' entre aspas
+        // seria um valor posicional e deixaria [switch]$Authorized desativado.
         StringBuilder invocation = new StringBuilder("& ").append(powershellLiteral(script.toString()));
-        for (String argument : arguments) invocation.append(' ').append(powershellLiteral(argument));
+        for (String argument : arguments) {
+            invocation.append(' ').append("-Authorized".equalsIgnoreCase(argument)
+                    ? "-Authorized" : powershellLiteral(argument));
+        }
         // O filho formata exceções completas como texto; argumentos continuam sendo literais.
-        String child = "$ErrorActionPreference='Stop'; [Console]::OutputEncoding=New-Object Text.UTF8Encoding $false; "
+        String child = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; "
+                + "[Console]::OutputEncoding=New-Object Text.UTF8Encoding $false; "
                 + "$global:LASTEXITCODE=0; try { " + invocation + "; exit $LASTEXITCODE } "
                 + "catch { [Console]::Error.WriteLine(($_ | Format-List * -Force | Out-String -Width 4096)); exit 1 }";
         // Captura os canais diretamente pelo .NET. Redirecionar stderr pelo pipeline do
         // Windows PowerShell 5.1 com Stop pode perder mensagens ou transformar avisos em falhas.
-        String elevated = "$ErrorActionPreference='Stop'; $env:TAG_FILE_JDK=" + powershellLiteral(javaHome)
+        String elevated = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; $env:TAG_FILE_JDK=" + powershellLiteral(javaHome)
                 + "; $utf8=New-Object Text.UTF8Encoding $false; $log=" + powershellLiteral(log.toString())
                 + "; $process=New-Object Diagnostics.Process; try { "
                 + "$info=New-Object Diagnostics.ProcessStartInfo; $info.FileName=" + powershellLiteral(powershell)
@@ -137,7 +143,7 @@ public final class ElevatedScriptExecutor {
                 + "catch { [IO.File]::AppendAllText($log, [Environment]::NewLine+"
                 + "($_ | Format-List * -Force | Out-String -Width 4096), $utf8); exit 1 } "
                 + "finally { $process.Dispose() }";
-        String request = "$ErrorActionPreference='Stop'; try { $process=Start-Process -FilePath "
+        String request = "$ProgressPreference='SilentlyContinue'; $ErrorActionPreference='Stop'; try { $process=Start-Process -FilePath "
                 + powershellLiteral(powershell)
                 + " -ArgumentList '-NoProfile','-NonInteractive','-EncodedCommand','" + encodedCommand(elevated)
                 + "' -Verb RunAs -Wait -PassThru; exit $process.ExitCode } "

@@ -1,4 +1,4 @@
-. "$PSScriptRoot/common.ps1"
+﻿. "$PSScriptRoot/common.ps1"
 Assert-Server
 $serverId = [int](Get-Content (Join-Path $Run 'mysql.pid'))
 $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$serverId"

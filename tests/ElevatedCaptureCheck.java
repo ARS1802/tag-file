@@ -77,6 +77,48 @@ public final class ElevatedCaptureCheck {
             check(process.exitValue() == 1, "Excecao PowerShell falha");
             String output = Files.readString(log);
             check(output.contains("FALHA ORIGINAL COMPLETA") && output.contains("ScriptStackTrace"), "Excecao inclui mensagem e contexto");
+
+            // Usa o preambulo real do instalador, mas para antes de qualquer download.
+            Path installDirectory = Files.createDirectories(root.resolve("database/scripts/windows"));
+            Path installer = installDirectory.resolve("install.ps1");
+            String installSource = Files.readString(Path.of("database/scripts/windows/install.ps1"));
+            String guard = installSource.lines().limit(3).collect(java.util.stream.Collectors.joining("\n"));
+            Files.copy(Path.of("database/scripts/windows/common.ps1"), installDirectory.resolve("common.ps1"));
+            Files.writeString(installer, guard + "\n[Console]::WriteLine('AUTORIZACAO RECEBIDA')\n"
+                    + "[Console]::WriteLine(('PROGRESSO: ' + $ProgressPreference))\n"
+                    + "Write-Progress -Activity 'PROGRESSO TESTE' -Status 'Teste'\nexit 0\n");
+            for (String[] forwarded : new String[][]{ {"-Authorized"}, {"-authorized"}, {},
+                    {"-Authorized:$false"}, {"-Authorized; Write-Output INJETADO"} }) {
+                boolean authorized = forwarded.length == 1 && forwarded[0].equalsIgnoreCase("-Authorized");
+                @SuppressWarnings("unchecked")
+                List<String> installCommand = (List<String>) method.invoke(null, installer, log, forwarded, "test", systemRoot);
+                String installRequest = new String(Base64.getDecoder().decode(installCommand.getLast()), StandardCharsets.UTF_16LE);
+                var installPayload = Pattern.compile("'-EncodedCommand','([A-Za-z0-9+/=]+)'").matcher(installRequest);
+                check(installPayload.find(), "Payload do instalador encontrado");
+                Process installProcess = new ProcessBuilder(shell.toString(), "-NoProfile", "-NonInteractive",
+                        "-EncodedCommand", installPayload.group(1)).inheritIO().start();
+                if (!installProcess.waitFor(30, TimeUnit.SECONDS)) {
+                    installProcess.destroyForcibly(); throw new AssertionError("Timeout no teste de autorizacao");
+                }
+                String installLog = Files.readString(log);
+                check(installProcess.exitValue() == (authorized ? 0 : 1),
+                        authorized ? "Switch Authorized realmente recebido pelo instalador" : "Ausencia/argumento falso nao autoriza");
+                check(installLog.contains("AUTORIZACAO RECEBIDA") == authorized, "Guarda de autorizacao preservada");
+                if (authorized) {
+                    check(installLog.contains("PROGRESSO: SilentlyContinue"), "Progresso suprimido antes de carregar modulos");
+                    check(!installLog.contains("CLIXML"), "Log sem serializacao de progresso");
+                } else {
+                    check(installLog.contains("Instalação não autorizada"), "Mensagem de recusa preserva acentos");
+                    check(!installLog.contains("\nINJETADO"), "Argumento nao executa codigo PowerShell");
+                }
+            }
+            try (var scripts = Files.list(Path.of("database/scripts/windows"))) {
+                for (Path source : scripts.filter(p -> p.toString().endsWith(".ps1")).sorted().toList()) {
+                    byte[] bytes = Files.readAllBytes(source);
+                    check(bytes.length >= 3 && bytes[0] == (byte) 0xef && bytes[1] == (byte) 0xbb
+                            && bytes[2] == (byte) 0xbf, "UTF-8 identificado no Windows PowerShell: " + source.getFileName());
+                }
+            }
             System.out.println("ELEVATED-CAPTURE: " + checks + " verificacoes passaram; UAC real nao executado.");
         } finally {
             try (var files = Files.walk(root)) {

@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $Runtime = Join-Path $ProjectRoot 'database/runtime'
 $Data = Join-Path $Runtime 'data'

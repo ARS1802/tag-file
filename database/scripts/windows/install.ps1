@@ -1,4 +1,4 @@
-param([switch]$Authorized)
+﻿param([switch]$Authorized)
 . "$PSScriptRoot/common.ps1"
 if (!$Authorized) { throw 'Instalação não autorizada' }
 # Instalação portátil não registra serviço nem altera contas de outras instâncias.

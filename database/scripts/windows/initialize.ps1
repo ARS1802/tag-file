@@ -1,4 +1,4 @@
-. "$PSScriptRoot/common.ps1"
+﻿. "$PSScriptRoot/common.ps1"
 & "$PSScriptRoot/check.ps1"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if (Test-Path (Join-Path $Data 'mysql')) { Assert-Owner; exit 0 }
