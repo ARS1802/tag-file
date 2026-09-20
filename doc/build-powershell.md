@@ -1,5 +1,9 @@
 # Build PowerShell: contrato e verificação
 
+**Fluxo atual de instalação Windows:** [preparação portátil](windows-portatil.md),
+sem elevação e com pacote offline. Os registros históricos de instalação elevada
+abaixo explicam os diagnósticos anteriores; `Main --build` continua elevado.
+
 O `scripts/build.ps1` compila os fontes Java e gera Javadoc. O alvo é Java 22,
 interpretando o requisito **JDK superior à versão 21**. O compilador precisa
 suportar `--release 22`; o Javadoc é selecionado na mesma pasta de ferramentas.
@@ -63,10 +67,9 @@ JDK gerou as classes utilizadas na execução.
   minutos. O limite de dez minutos por ferramenta do build permanece.
 
 Compilar não verifica conexão SQL nem disponibilidade da GUI. O driver JDBC
-continua sendo uma dependência de execução. Os comandos do instalador do MySQL
-foram preservados; os scripts Windows receberam BOM UTF-8 para leitura correta no
-Windows PowerShell 5.1. O erro anterior de `Invoke-WebRequest` precisa de seu
-diagnóstico completo para identificar a causa do download.
+continua sendo uma dependência de execução. Os scripts Windows usam BOM UTF-8
+para leitura correta no Windows PowerShell 5.1. A correção do endereço de download
+do instalador MySQL está documentada ao final deste arquivo.
 
 ## Testes reproduzíveis
 
@@ -186,3 +189,60 @@ cancelar o UAC deve encerrar a inicialização sem executar a instalação.
 
 Referência do mecanismo nativo:
 [Start-Process, RunAs e espera pelo processo](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1).
+
+## Correção do download: HTTP 403
+
+O relato seguinte mostrou `Invoke-WebRequest` falhando na linha 9 do instalador,
+com HTTP 403 e uma página de erro da Oracle. A execução já havia passado pela
+guarda `-Authorized`. Esse erro é uma resposta do servidor remoto; conceder
+privilégios de administrador local não resolve essa recusa.
+
+Uma comparação com PowerShell 7.6.5 no Linux, mantendo os mesmos parâmetros e
+User-Agent de Windows PowerShell, reproduziu o problema: o endereço
+`https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.9-winx64.zip` respondeu
+403, enquanto `https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.9-winx64.zip`
+respondeu 200 para HEAD e 206 para GET dos quatro primeiros bytes. O CDN é o
+destino oficial observado no redirecionamento do portal. Não foi identificada
+a regra interna do servidor que causou o bloqueio.
+
+O instalador passou a usar diretamente esse CDN, mantendo a versão 8.4.9, e
+mostra o endereço no console. Usa `-UseBasicParsing` para a execução automatizada
+também no Windows PowerShell 5.1. Falhas de download continuam interrompendo a
+instalação e chegando ao diagnóstico.
+
+O teste `tests/windows-install-contract.ps1` executa o instalador real com um ZIP
+mínimo, substituindo apenas a rede e a verificação dos binários MySQL. Antes da
+correção, falhou no endereço antigo; depois, passou em 16 verificações: extração,
+registro do hash, reutilização sem novo download, propagação de HTTP 403 e recusa
+sem autorização. Para reproduzir no Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\windows-install-contract.ps1
+```
+
+Essa validação local não executou o download completo, o MySQL, Windows PowerShell
+5.1 nem o UAC real. O arquivo fornecido com extensão `.log.ps1` contém o script
+temporário executado; a transcrição fica no arquivo `.log` correspondente.
+
+A consulta feita pelo usuário no terminal PowerShell integrado do IntelliJ
+retornou `IsInRole(Administrator) = False`, `EnableLUA = 1`,
+`ConsentPromptBehaviorAdmin = 0` e `PromptOnSecureDesktop = 0`. O terminal estava
+sem elevação, mas a política para administradores estava configurada para elevar
+sem pedir consentimento. Isso explica a ausência do aviso nesse fluxo, sem exigir
+que o IntelliJ tenha sido aberto como administrador. O resultado `False` descreve
+o token do terminal consultado, não o token do PowerShell filho elevado.
+
+O launcher mantém `Start-Process -Verb RunAs`, mecanismo nativo de elevação.
+`EnableLUA = 1` mantém o UAC habilitado; não garante que ele apresente avisos.
+`PromptOnSecureDesktop = 0` desativa o desktop seguro para os avisos, mas não é
+a configuração que suprime o consentimento. Nenhuma política foi alterada pelo
+projeto.
+
+Na investigação anterior foi sugerido ajustar o nível de notificação do UAC para
+verificar o diálogo nativo. Esse ajuste não resolve HTTP 403 e não é requisito da
+aplicação: a preparação portátil Windows agora roda com a conta atual, conforme
+[Windows portátil](windows-portatil.md). As políticas do ambiente de apresentação
+permanecem sob controle do responsável pelo sistema.
+
+Referência: [Como funciona o UAC](https://learn.microsoft.com/en-us/windows-server/security/user-account-control/how-user-account-control-works).
+Valores das políticas: [Configuração do UAC](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/user-account-control/settings-and-configuration).
