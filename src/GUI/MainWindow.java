@@ -1,10 +1,12 @@
 /*
  * Inventário — MainWindow.
- * MainWindow(...): compõe os exploradores, as ações globais e o indicador de trabalho.
+ * MainWindow(...): compõe os exploradores, as ações globais e o indicador de trabalho; aplica fonte 13pt a todo o Look and Feel antes de montar os Panels.
  * show(): exibe a janela após a carga inicial dos dados.
  * updateLayout(boolean): alterna entre abas e painéis lado a lado.
  * requestClose(): solicita o encerramento quando não existe outra ação em andamento.
  * dispose(): remove as inscrições e descarta os componentes Swing.
+ * applyFontDefaults(): define fonte 13pt nos componentes Swing padrão e desliga o beep de feedback do Windows, uma única vez, antes de qualquer componente ser criado.
+ * fadeIn(Window): anima a opacidade de 0 a 1 para a janela de progresso não aparecer abruptamente.
  */
 
 package GUI;
@@ -15,17 +17,26 @@ import model.NativeDirectory;
 import service.ActionGate;
 import service.ExplorerEventService;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
 /** Janela principal com os exploradores por etiquetas e por diretórios. */
@@ -67,8 +78,9 @@ public final class MainWindow {
      * @throws IllegalStateException se chamado fora da EDT
      */
     public MainWindow(TagExplorerController tagController, LocalFileExplorerController localController,
-            ExplorerEventService events, ActionGate gate, NativeDirectory directory, AutoCloseable session) {
+                      ExplorerEventService events, ActionGate gate, NativeDirectory directory, AutoCloseable session) {
         if (!SwingUtilities.isEventDispatchThread()) throw new IllegalStateException("Crie a janela na EDT");
+        applyFontDefaults();
         this.gate = gate;
         this.session = session;
         // Apresenta os cadastros organizados pelas etiquetas.
@@ -104,14 +116,24 @@ public final class MainWindow {
         content.add(views, BorderLayout.CENTER);
         frame.setContentPane(content);
 
-        // Informa progresso sem bloquear a thread de eventos.
-        loading = new JDialog(frame, "Loading", false);
+        // Informa progresso sem bloquear a thread de eventos; sem moldura própria, decorada por nós mesmos.
+        loading = new JDialog(frame, false);
+        loading.setUndecorated(true);
         loading.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        JPanel loadingContent = new JPanel(new BorderLayout(0, 12));
+        loadingContent.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0x60, 0x60, 0x60), 1),
+                BorderFactory.createEmptyBorder(18, 24, 18, 24)));
+        JLabel loadingLabel = new JLabel("Carregando…", SwingConstants.CENTER);
+        loadingLabel.setFont(loadingLabel.getFont().deriveFont(Font.BOLD, 17f));
         // Representa operações cujo tempo restante é desconhecido.
         JProgressBar progress = new JProgressBar();
         progress.setIndeterminate(true);
-        loading.add(progress);
-        loading.setSize(260, 75);
+        progress.setPreferredSize(new Dimension(260, 26));
+        loadingContent.add(loadingLabel, BorderLayout.NORTH);
+        loadingContent.add(progress, BorderLayout.CENTER);
+        loading.setContentPane(loadingContent);
+        loading.setSize(340, 130);
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         // Encaminha o fechamento para a liberação ordenada dos recursos.
@@ -130,7 +152,13 @@ public final class MainWindow {
     public void show() {
         gate.setBusyListener(busy -> {
             loading.setLocationRelativeTo(frame);
-            loading.setVisible(busy);
+            if (busy) {
+                loading.setOpacity(0f);
+                loading.setVisible(true);
+                fadeIn(loading);
+            } else {
+                loading.setVisible(false);
+            }
             refresh.setEnabled(!busy);
             sideBySide.setEnabled(!busy);
         });
@@ -179,5 +207,38 @@ public final class MainWindow {
         local.dispose();
         loading.dispose();
         frame.dispose();
+    }
+
+    /**
+     * Define fonte 13pt nos componentes Swing padrão, uma única vez, antes de qualquer componente ser criado.
+     * Também desliga o beep de feedback de cliques inválidos do Look and Feel.
+     * Só afeta apresentação (UIManager); não altera nenhum contrato de domínio ou persistência.
+     */
+    private static void applyFontDefaults() {
+        // Some Look and Feels (ex.: Windows) tocam um beep de feedback em cliques inválidos, como botões desabilitados.
+        UIManager.put("AuditoryCues.playList", null);
+        Font base = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
+        for (String key : new String[]{
+                "Label.font", "Button.font", "CheckBox.font", "RadioButton.font", "ComboBox.font",
+                "List.font", "Tree.font", "TextField.font", "TextArea.font", "FormattedTextField.font",
+                "Spinner.font", "TabbedPane.font", "ToolTip.font", "ProgressBar.font", "Panel.font",
+                "OptionPane.messageFont", "OptionPane.buttonFont"}) {
+            UIManager.put(key, base);
+        }
+    }
+
+    /**
+     * Anima a opacidade de 0 a 1 para a janela de progresso não aparecer abruptamente.
+     *
+     * @param window janela já visível, com opacidade inicial zero
+     */
+    private static void fadeIn(Window window) {
+        Timer timer = new Timer(15, null);
+        timer.addActionListener(event -> {
+            float next = window.getOpacity() + 0.12f;
+            if (next >= 1f) { window.setOpacity(1f); timer.stop(); }
+            else window.setOpacity(next);
+        });
+        timer.start();
     }
 }

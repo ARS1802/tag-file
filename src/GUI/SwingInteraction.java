@@ -229,7 +229,6 @@ public final class SwingInteraction implements Interaction {
             Throwable cause = error instanceof CompletionException ? error.getCause() : error;
             if (cause instanceof RejectedExecutionException) SwingUtilities.invokeLater(() -> {
                 if (parent instanceof JComponent component) component.setToolTipText(cause.getMessage());
-                Toolkit.getDefaultToolkit().beep();
             });
         });
     }
