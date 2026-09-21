@@ -141,7 +141,7 @@ O comportamento está em [OP-09](requisitos-e-regras.md#op-09) e foi verificado 
 
 ## P-11 — Ambiente, schema e encerramento
 
-**Definido:** instância MySQL local administrada pelo aplicativo, parâmetros de referência, scripts PowerShell/Bash, ProcessBuilder, JDK superior à versão 21 e Connector/J manual. Sem schema_history.
+**Definido:** instância MySQL local administrada pelo aplicativo, parâmetros de referência, scripts PowerShell/Bash, ProcessBuilder, JDK superior à versão 21 e Connector/J versionado em `lib`. Sem schema_history.
 
 **Decisão atual:** MySQL portátil 8.4.9, Connector/J 9.7.0 e JDK superior à versão 21. Scripts reais em Bash/PowerShell, espera limitada, identificação da instância por dados/porta/marcador/PID, schema não destrutivo e Desktop.OPEN. Windows implementado, não executado neste host. [Detalhes e justificativas](decisoes-implementacao.md).
 

@@ -97,9 +97,9 @@ public final class DatabaseConnection implements AutoCloseable {
             DriverManager.getDriver(settings.getProperty("db.url"));
         } catch (ClassNotFoundException | SQLException unavailable) {
             throw new SQLException("Driver JDBC do MySQL ausente do classpath."
-                    + "\nCopie mysql-connector-j-9.7.0.jar para a pasta lib do projeto e inclua-o nas dependências de execução."
+                    + "\nA biblioteca lib/mysql-connector-j-9.7.0.jar acompanha o projeto. Verifique se sua cópia do repositório está completa."
                     + "\nNo IntelliJ: Project Structure > Modules > Dependencies. Confira o módulo usado pela configuração Run."
-                    + "\nO JAR não é incluído pelo Git. Consulte lib/README.md.", "08001", unavailable);
+                    + "\nRestaure a biblioteca versionada se ela estiver ausente. Consulte lib/README.md.", "08001", unavailable);
         } catch (LinkageError incompatible) {
             throw new SQLException("Não foi possível carregar o driver JDBC do MySQL."
                     + "\nConfira a integridade do Connector/J na pasta lib e sua compatibilidade com o JDK.", "08001", incompatible);

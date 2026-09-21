@@ -29,10 +29,9 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-# Recursos locais da instância exclusiva e dependências distribuídas separadamente.
+# Recursos locais da instância exclusiva.
 database/runtime/
 database/config/database.properties
-lib/*.jar
 
 # Pacote oficial distribuído separadamente para instalação offline.
 database/packages/*.zip

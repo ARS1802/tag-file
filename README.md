@@ -8,7 +8,7 @@ Aplicativo didático Java, Swing e MySQL para classificar arquivos com etiquetas
 - [Documentação do domínio e arquitetura](doc/README.md)
 - [Análise da versão mínima do Java e do driver JDBC](doc/compatibilidade-java.md)
 
-Sem Maven/Gradle. Coloque o Connector/J manualmente em `lib` conforme [estas instruções](lib/README.md).
+Sem Maven/Gradle. O Connector/J já acompanha o repositório em `lib`, com a dependência configurada no IntelliJ e nos scripts. Veja [versão e integridade](lib/README.md).
 Com um JDK superior à versão 21 no PATH:
 
 ```sh

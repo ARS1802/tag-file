@@ -10,9 +10,9 @@ explícita de compilação elevada; no Linux permanece o executor já existente.
 1. Transfira os fontes, scripts e `database/config/mysql-windows-package.json`
    da mesma revisão. Uma edição local não chega ao Windows por um `git pull`
    enquanto não estiver no repositório remoto.
-2. Leve também `database/packages/mysql-8.4.9-winx64.zip` e o Connector/J em `lib`.
-   Ambos são dependências locais ignoradas pelo Git. Não é necessário levar dados
-   de uma instância MySQL de outra máquina.
+2. Para instalação offline, leve também `database/packages/mysql-8.4.9-winx64.zip`,
+   que é ignorado pelo Git. O Connector/J em `lib` já acompanha o repositório.
+   Não é necessário levar dados de uma instância MySQL de outra máquina.
 3. Use um JDK superior a 21, configure o classpath com `lib/*` e execute `Main`
    sem argumentos no IntelliJ. Ao faltar a instalação, confirme **Preparar**.
    **Cancelar**, ou fechar a confirmação, encerra sem instalar/inicializar dados.
@@ -165,10 +165,10 @@ conteúdo inválido. A cópia não usa substituição de arquivos existentes.
 
 No comando do IntelliJ fornecido, o classpath continha somente
 `out/production/tag-file`. O Connector/J também precisa estar disponível:
-transfira `lib/mysql-connector-j-9.7.0.jar` (ignorado pelo Git) e confirme a biblioteca
-em **Project Structure > Modules > Dependencies** e o módulo da configuração
-**Run**. O módulo versionado `tag-file.iml` já declara o JAR relativo à pasta do
-projeto. A verificação do driver não abre conexão de rede.
+`lib/mysql-connector-j-9.7.0.jar` agora é versionado e acompanha o clone. O módulo
+`tag-file.iml` já declara o JAR relativo à pasta do projeto. Em cópias antigas,
+atualize também o JAR e confira o módulo da configuração **Run**. Se a biblioteca
+não aparecer, verifique **Project Structure > Modules > Dependencies**. A verificação do driver não abre conexão de rede.
 [Referência Java: DriverManager](https://docs.oracle.com/en/java/javase/24/docs/api/java.sql/java/sql/DriverManager.html).
 
 Verificação local: 10 verificações de configuração sem driver e as mesmas 10 com

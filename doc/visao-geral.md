@@ -68,7 +68,7 @@ Diretórios servem à navegação e aos destinos das operações. Não haverá c
 
 | Tema | Decisão |
 |---|---|
-| Dependências | Sem Maven ou infraestrutura adicional por convenção. A referência é Connector/J manual, sem outro gerenciador, framework ou ORM. |
+| Dependências | Sem Maven ou infraestrutura adicional por convenção. A referência é Connector/J versionado em `lib`, sem outro gerenciador, framework ou ORM. |
 | Conexão | DatabaseConnection compartilhada, sem pool. |
 | Transações | Sem controle explícito de transações; operações podem terminar parcialmente. |
 | Coordenação | Controllers chamam Managers/Services diretamente. A retirada de Command está encerrada em [DEC-01](decisoes-e-pendencias.md#dec-01). |

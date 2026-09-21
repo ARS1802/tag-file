@@ -50,7 +50,7 @@ O artefato obtido foi `com.mysql:mysql-connector-j:9.7.0`, mantido em
 `lib/mysql-connector-j-9.7.0.jar`. O download foi validado contra o SHA-256 publicado
 no Maven Central e apresentou o mesmo conteúdo do JAR que já estava no diretório.
 O módulo `tag-file.iml` agora declara essa dependência; os comandos de terminal já
-incluem `lib/*` no classpath. O JAR permanece ignorado pelo Git.
+incluem `lib/*` no classpath. O JAR é versionado no projeto e acompanha o clone.
 
 JDBC é a API fornecida pelo JDK; Connector/J é a implementação que permite comunicar
 com MySQL. A versão 9.7.0 implementa JDBC 4.2 e suporta MySQL 8.0 ou posterior,

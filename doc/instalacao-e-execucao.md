@@ -82,7 +82,7 @@ database/
 | schema | Criar tabelas ausentes e índice adicional, conferindo a estrutura existente antes de continuar. |
 | runtime | Manter dados, logs e informações de execução. |
 
-Os dados são preparados no local previsto e reutilizados nas próximas execuções. Runtime, logs, configuração real e JAR não são versionados. Configuração de exemplo, templates, scripts e SQL são arquivos do projeto.
+Os dados são preparados no local previsto e reutilizados nas próximas execuções. Runtime, logs e configuração real não são versionados. O JAR do Connector/J, a configuração de exemplo, templates, scripts e SQL acompanham o projeto.
 
 <a id="amb-03"></a>
 
@@ -152,7 +152,7 @@ Reconectar durante a sessão não executa novamente a limpeza de Etiqueta Ausent
 
 ## JDK, JDBC e inclusão do driver
 
-O projeto requer **JDK superior à versão 21**, sem Maven. JDBC faz parte da API Java; o Connector/J **9.7.0** é incluído manualmente como JAR. A implementação foi executada com MySQL **8.4.9**; fontes de compatibilidade estão no [registro P-11](decisoes-implementacao.md).
+O projeto requer **JDK superior à versão 21**, sem Maven. JDBC faz parte da API Java; o Connector/J **9.7.0** é versionado como JAR na pasta `lib` e acompanha o clone. A implementação foi executada com MySQL **8.4.9**; fontes de compatibilidade estão no [registro P-11](decisoes-implementacao.md).
 
 ```text
 lib/
