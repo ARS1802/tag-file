@@ -98,7 +98,7 @@ Os dados são preparados no local previsto e reutilizados nas próximas execuç�
 | Reconexão solicitada | autoReconnect=true |
 | Dados | database/runtime/data |
 
-Exemplo mínimo de configuração; copie o arquivo completo de `database/config/database.properties.example`, que também define fuso e limites de espera:
+Exemplo mínimo de configuração. Na primeira abertura, o arquivo local ausente é criado a partir de `database/config/database.properties.example`, que também define fuso e limites de espera. Arquivos locais existentes não são sobrescritos:
 
 ```properties
 db.url=jdbc:mysql://127.0.0.1:3333/tag_file?autoReconnect=true

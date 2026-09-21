@@ -149,3 +149,38 @@ javac --release 22 -encoding UTF-8 -cp out/classes -d out/test-classes tests/Pre
 java -cp 'out/classes;out/test-classes' PreparationProgressCheck
 java -cp 'out/classes;out/test-classes' DatabasePreparationCheck
 ```
+
+## Configuração JDBC ausente na primeira abertura
+
+O relato com `NoSuchFileException: database/config/database.properties` mostrou
+que o MySQL havia passado pelas etapas de verificação, inicialização e início.
+O `stop` seguinte era a limpeza da sessão após a falha Java. O diálogo mostrava
+somente o caminho porque a mensagem original dessa exceção é o nome do arquivo.
+
+Esse arquivo local é ignorado pelo Git. A entrada agora prepara a configuração
+ausente usando `database.properties.example`, valida seu conteúdo e confere o
+Connector/J **antes** de preparar o servidor. Mantém arquivos existentes e conserva
+a exceção original nos detalhes, com mensagem explicando ausência, leitura ou
+conteúdo inválido. A cópia não usa substituição de arquivos existentes.
+
+No comando do IntelliJ fornecido, o classpath continha somente
+`out/production/tag-file`. O Connector/J também precisa estar disponível:
+transfira `lib/mysql-connector-j-9.7.0.jar` (ignorado pelo Git) e confirme a biblioteca
+em **Project Structure > Modules > Dependencies** e o módulo da configuração
+**Run**. O módulo versionado `tag-file.iml` já declara o JAR relativo à pasta do
+projeto. A verificação do driver não abre conexão de rede.
+[Referência Java: DriverManager](https://docs.oracle.com/en/java/javase/24/docs/api/java.sql/java/sql/DriverManager.html).
+
+Verificação local: 10 verificações de configuração sem driver e as mesmas 10 com
+o JAR real; mais 5 verificações da entrada sem driver e 5 com driver. Os testes da
+entrada usam a janela Swing real, uma pasta temporária e scripts que interrompem
+na primeira verificação, comprovando que configuração/driver são conferidos antes
+de iniciar os scripts. Nenhum MySQL foi instalado ou iniciado por esses testes.
+
+```powershell
+javac --release 22 -encoding UTF-8 -cp out/classes -d out/test-classes tests/DatabaseConfigurationCheck.java tests/ApplicationPrerequisitesCheck.java
+java -cp 'out/classes;out/test-classes' DatabaseConfigurationCheck
+java -cp 'out/classes;out/test-classes;lib/*' DatabaseConfigurationCheck driver-present
+java -cp 'out/classes;out/test-classes' ApplicationPrerequisitesCheck
+java -cp 'out/classes;out/test-classes;lib/*' ApplicationPrerequisitesCheck driver-present
+```

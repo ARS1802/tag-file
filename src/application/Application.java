@@ -71,10 +71,12 @@ public final class Application implements AutoCloseable {
         }
         try (PreparationWindow progress = PreparationWindow.open(root.resolve("database/runtime/logs"))) {
             environment.setProgressListener(progress::update);
+            progress.update(new PreparationProgress("Verificando configuração e driver JDBC", -1, null));
+            // Prepara e valida os requisitos Java antes de iniciar o servidor.
+            database = DatabaseConnection.prepareLocalConfiguration(root.resolve("database/config/database.properties"));
+            database.verifyDriver();
             prepareEnvironment();
             progress.update(new PreparationProgress("Conectando ao banco", -1, null));
-            // Compartilha uma conexão JDBC entre todos os DAOs.
-            database = new DatabaseConnection(root.resolve("database/config/database.properties"));
             database.open();
             progress.update(new PreparationProgress("Verificando estrutura do banco", -1, null));
             environment.prepareSchema(database);

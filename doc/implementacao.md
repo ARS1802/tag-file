@@ -72,7 +72,7 @@ Verificações anteriores da integração confirmaram a ordem instalar → inici
 
 ## Ambiente e ciclo de vida
 
-Copie `database/config/database.properties.example` para `database/config/database.properties` se o arquivo real ainda não existir. Inclua o [Connector/J em lib](../lib/README.md) e no classpath. Configuração local, JAR, dados e binários não são versionados.
+Na primeira abertura, a aplicação cria `database/config/database.properties` a partir do modelo versionado `database.properties.example`, se o arquivo local estiver ausente. Configurações existentes são preservadas, inclusive quando inválidas; nesse caso, a mensagem informa o que revisar. Configuração e driver são verificados antes de iniciar o MySQL. Inclua o [Connector/J em lib](../lib/README.md) e no classpath. Configuração local, JAR, dados e binários não são versionados.
 
 A aplicação exige ambiente gráfico. Na abertura, verifica e prepara a instância MySQL exclusiva do projeto. Se os executáveis estiverem ausentes, solicita consentimento na interface para preparar o pacote; somente no Linux a instalação continua usando autorização nativa do sistema. Cancelar essa confirmação encerra a inicialização. Dependências nativas do MySQL precisam estar disponíveis no sistema; veja [instalação e execução](instalacao-e-execucao.md).
 
