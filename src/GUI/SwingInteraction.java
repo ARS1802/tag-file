@@ -130,6 +130,9 @@ public final class SwingInteraction implements Interaction {
                 if (cause instanceof DatabaseManager.ScriptFailure scriptFailure) {
                     actions.add(logActions(scriptFailure.getLog()), BorderLayout.SOUTH); break;
                 }
+                if (cause instanceof DatabaseManager.SchemaFailure schemaFailure && schemaFailure.getLog() != null) {
+                    actions.add(logActions(schemaFailure.getLog()), BorderLayout.SOUTH); break;
+                }
             }
             panel.add(actions, BorderLayout.SOUTH);
             expanded.addActionListener(e -> { scroll.setVisible(expanded.isSelected()); Window window = SwingUtilities.getWindowAncestor(panel); if (window != null) window.pack(); });

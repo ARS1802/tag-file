@@ -13,7 +13,10 @@
  * - DatabaseManager.prepareSchema(DatabaseConnection database): Confirma identidade da instância antes de aplicar DDL; não usa transações explícitas.
  * - DatabaseManager.verifyInstance(DatabaseConnection database): Verifica porta e diretório reais do servidor, sem confiar somente no endereço JDBC.
  * - DatabaseManager.executeSql(DatabaseConnection database, Path script): Aplica SQL confiável do projeto, separado por ponto e vírgula; não aceita entrada do usuário.
- * - DatabaseManager.validateSchema(DatabaseConnection database): Confere colunas obrigatórias e o índice único do caminho; incompatibilidade exige revisão.
+ * - DatabaseManager.validateSchema(DatabaseConnection database): Confere contratos e compara nomes conforme a política do servidor, preservando o schema.
+ * - DatabaseManager.schemaIdentifier(String identifier, boolean foldTableNames): Adapta somente nomes de tabelas e catálogos para comparação.
+ * - DatabaseManager.schemaRelation(ResultSet rows, boolean foldTableNames): Representa vínculos JDBC com catálogo, colunas, ordem e regra de exclusão.
+ * - DatabaseManager.schemaFailure(DatabaseMetaData metadata, int caseMode, List expected, List actual, List reported): Registra as diferenças sem modificar o banco.
  * - DatabaseManager.seedTags(DatabaseConnection database): Prepara cinco identidades fixas uma vez; exclusões posteriores não são revertidas.
  * - DatabaseManager.stop(): Encerra somente a instância identificada; fechar JDBC antes desta chamada.
  *
@@ -158,6 +161,31 @@ public final class DatabaseManager {
         }
     }
 
+    /** Incompatibilidade de vínculos com detalhes SQL e, quando possível, log persistente. */
+    public static final class SchemaFailure extends SQLException {
+        /** Caminho do relatório, ou null quando sua gravação falhar. */
+        private final Path log;
+
+        /**
+         * Preserva o diagnóstico mesmo sem permissão para gravar o log.
+         * @param detail metadados esperados e encontrados, sem credenciais
+         * @param log relatório persistente, ou null se indisponível
+         */
+        private SchemaFailure(String detail, Path log) {
+            super("Schema incompatível: os vínculos entre tabelas ou suas regras de exclusão diferem do esperado."
+                    + "\nO Tag-File não alterou esses vínculos. Consulte os detalhes técnicos antes de modificar o banco."
+                    + (log == null ? "\nNão foi possível gravar o log." : "\nLog: " + log),
+                    "42000", new SQLException(detail, "42000"));
+            this.log = log;
+        }
+
+        /**
+         * Disponibiliza o relatório à interface sem extrair caminhos da mensagem.
+         * @return arquivo de diagnóstico, ou null quando não pôde ser gravado
+         */
+        public Path getLog() { return log; }
+    }
+
     /**
      * Executa apenas scripts distribuídos; credenciais nunca vão nos argumentos.
      *
@@ -260,12 +288,21 @@ public final class DatabaseManager {
     }
 
     /**
-     * Confere colunas obrigatórias e o índice único do caminho; incompatibilidade exige revisão.
+     * Confere colunas, chaves, cascatas, índice e caminhos conforme a política de nomes do servidor.
+     * A validação não modifica tabelas nem dados; incompatibilidades reais exigem revisão.
      *
      * @param database conexão compartilhada
      * @throws SQLException se schema não atender os contratos utilizados pelos DAOs
      */
     private void validateSchema(DatabaseConnection database) throws SQLException {
+        int lowerCaseTableNames;
+        try (Statement statement = database.getConnection().createStatement();
+             ResultSet rows = statement.executeQuery("SELECT @@lower_case_table_names")) {
+            rows.next();
+            lowerCaseTableNames = rows.getInt(1);
+        }
+        // Segue o servidor, não o sistema operacional que executa o cliente Java.
+        boolean foldTableNames = lowerCaseTableNames != 0;
         try (Statement s = database.getConnection().createStatement()) {
             for (String query : List.of("SELECT id,path,available,size_bytes,created_at,modified_at,last_accessed_at FROM LOCAL_FILE LIMIT 0",
                     "SELECT id,name,color,created_at,last_file_tagged_at,predefined FROM TAG LIMIT 0", "SELECT file_id,tag_id FROM LOCAL_FILE_TAG LIMIT 0", "SELECT tag_id,extension FROM TAG_EXTENSION LIMIT 0")) {
@@ -282,23 +319,102 @@ public final class DatabaseManager {
             try (ResultSet rows = metadata.getPrimaryKeys("tag_file", null, expected.getKey())) { while (rows.next()) actual.add(rows.getString("COLUMN_NAME")); }
             if (!actual.equals(expected.getValue())) throw new SQLException("Schema incompatível: chave primária de " + expected.getKey(), "42000");
         }
-        Set<String> relations = new HashSet<>();
-        for (String table : List.of("TAG_EXTENSION", "LOCAL_FILE_TAG")) {
+        // A lista também detecta duplicatas; não descarta vínculos com regra diferente de CASCADE.
+        List<String> relations = new ArrayList<>(), reported = new ArrayList<>();
+        for (String table : new TreeSet<>(primaryKeys.keySet())) {
             try (ResultSet rows = metadata.getImportedKeys("tag_file", null, table)) {
-                while (rows.next()) if (rows.getShort("DELETE_RULE") == DatabaseMetaData.importedKeyCascade)
-                    relations.add(table + "." + rows.getString("FKCOLUMN_NAME") + ">" + rows.getString("PKTABLE_NAME") + "." + rows.getString("PKCOLUMN_NAME"));
+                while (rows.next()) {
+                    relations.add(schemaRelation(rows, foldTableNames));
+                    reported.add(rows.getString("FK_NAME") + ": " + schemaRelation(rows, false));
+                }
             }
         }
-        if (!relations.equals(Set.of("TAG_EXTENSION.tag_id>TAG.id", "LOCAL_FILE_TAG.tag_id>TAG.id", "LOCAL_FILE_TAG.file_id>LOCAL_FILE.id"))) throw new SQLException("Schema incompatível: vínculos/cascatas diferentes do contrato", "42000");
+        String catalog = schemaIdentifier("tag_file", foldTableNames) + ".";
+        List<String> expectedRelations = new ArrayList<>();
+        for (String pair : List.of("TAG_EXTENSION.tag_id>TAG.id", "LOCAL_FILE_TAG.tag_id>TAG.id", "LOCAL_FILE_TAG.file_id>LOCAL_FILE.id")) {
+            String[] ends = pair.split(">");
+            expectedRelations.add(catalog + ends[0] + " -> " + catalog + ends[1] + " [KEY_SEQ=1; ON DELETE=CASCADE]");
+        }
+        Collections.sort(relations); Collections.sort(expectedRelations);
+        if (!relations.equals(expectedRelations)) throw schemaFailure(metadata, lowerCaseTableNames, expectedRelations, relations, reported);
         try (Statement statement = database.getConnection().createStatement(); ResultSet rows = statement.executeQuery("SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATETIME_PRECISION,CHARACTER_MAXIMUM_LENGTH,COLLATION_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()")) {
             while (rows.next()) {
                 String column = rows.getString("COLUMN_NAME");
                 if (Set.of("created_at", "modified_at", "last_accessed_at", "last_file_tagged_at").contains(column)
                         && (!rows.getString("DATA_TYPE").equals("datetime") || rows.getInt("DATETIME_PRECISION") != 6)) throw new SQLException("Schema incompatível: data precisa ser DATETIME(6): " + column, "42000");
-                if (rows.getString("TABLE_NAME").equals("LOCAL_FILE") && column.equals("path")
+                if (schemaIdentifier(rows.getString("TABLE_NAME"), foldTableNames).equals("LOCAL_FILE") && column.equals("path")
                         && (rows.getLong("CHARACTER_MAXIMUM_LENGTH") != 700 || !"utf8mb4_0900_bin".equals(rows.getString("COLLATION_NAME")))) throw new SQLException("Schema incompatível: representação de caminho", "42000");
             }
         }
+    }
+
+    /**
+     * Compara identificadores conforme o servidor; nunca normaliza caminhos de arquivos.
+     * @param identifier nome de tabela ou catálogo retornado pelo JDBC
+     * @param foldTableNames indica comparação sem distinguir maiúsculas no servidor
+     * @return identificador para comparação, preservado no modo sensível a maiúsculas
+     */
+    private static String schemaIdentifier(String identifier, boolean foldTableNames) {
+        if (identifier == null) return "<ausente>";
+        return foldTableNames ? identifier.toUpperCase(Locale.ROOT) : identifier;
+    }
+
+    /**
+     * Representa cada coluna de uma FK, incluindo catálogo, ordem e regra de exclusão.
+     * @param rows linha corrente de getImportedKeys
+     * @param foldTableNames política de comparação de tabelas e catálogos
+     * @return relação comparável sem depender do nome dado à constraint
+     * @throws SQLException se metadados não puderem ser lidos
+     */
+    private static String schemaRelation(ResultSet rows, boolean foldTableNames) throws SQLException {
+        short rule = rows.getShort("DELETE_RULE");
+        String deletion = switch (rule) {
+            case DatabaseMetaData.importedKeyCascade -> "CASCADE";
+            case DatabaseMetaData.importedKeyRestrict -> "RESTRICT";
+            case DatabaseMetaData.importedKeyNoAction -> "NO ACTION";
+            case DatabaseMetaData.importedKeySetNull -> "SET NULL";
+            case DatabaseMetaData.importedKeySetDefault -> "SET DEFAULT";
+            default -> "DESCONHECIDA(" + rule + ")";
+        };
+        return schemaIdentifier(rows.getString("FKTABLE_CAT"), foldTableNames) + "."
+                + schemaIdentifier(rows.getString("FKTABLE_NAME"), foldTableNames) + "." + rows.getString("FKCOLUMN_NAME")
+                + " -> " + schemaIdentifier(rows.getString("PKTABLE_CAT"), foldTableNames) + "."
+                + schemaIdentifier(rows.getString("PKTABLE_NAME"), foldTableNames) + "." + rows.getString("PKCOLUMN_NAME")
+                + " [KEY_SEQ=" + rows.getShort("KEY_SEQ") + "; ON DELETE=" + deletion + "]";
+    }
+
+    /**
+     * Registra diferenças sem alterar o schema nem ocultar erros de gravação do relatório.
+     * @param metadata versões do servidor e do driver
+     * @param caseMode lower_case_table_names lido do servidor
+     * @param expected relações exigidas pelos DAOs
+     * @param actual relações encontradas, normalizadas só para comparação
+     * @param reported nomes originais retornados pelo JDBC, incluindo constraints
+     * @return falha SQL com detalhes e eventual caminho do log
+     * @throws SQLException se as versões dos componentes não puderem ser consultadas
+     */
+    private SchemaFailure schemaFailure(DatabaseMetaData metadata, int caseMode, List<String> expected,
+                                        List<String> actual, List<String> reported) throws SQLException {
+        List<String> missing = new ArrayList<>(expected), unexpected = new ArrayList<>(actual);
+        // Remove uma ocorrência por vez para manter visíveis constraints duplicadas.
+        for (String relation : actual) missing.remove(relation);
+        for (String relation : expected) unexpected.remove(relation);
+        String detail = "MySQL: " + metadata.getDatabaseProductVersion() + "\nJDBC: " + metadata.getDriverVersion()
+                + "\nlower_case_table_names=" + caseMode + "\nCatálogo: tag_file"
+                + "\nEsperado:\n" + String.join("\n", expected)
+                + "\nEncontrado (JDBC):\n" + String.join("\n", reported)
+                + "\nAusente: " + missing + "\nInesperado: " + unexpected + "\n";
+        Path log = null;
+        IOException logFailure = null;
+        try {
+            Path directory = Files.createDirectories(root.resolve("database/runtime/logs"));
+            Path candidate = Files.createTempFile(directory, "schema-", ".log");
+            Files.writeString(candidate, detail, StandardCharsets.UTF_8);
+            log = candidate;
+        } catch (IOException failure) { logFailure = failure; }
+        SchemaFailure failure = new SchemaFailure(detail, log);
+        if (logFailure != null) failure.addSuppressed(logFailure);
+        return failure;
     }
 
     /**

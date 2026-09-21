@@ -184,3 +184,60 @@ java -cp 'out/classes;out/test-classes;lib/*' DatabaseConfigurationCheck driver-
 java -cp 'out/classes;out/test-classes' ApplicationPrerequisitesCheck
 java -cp 'out/classes;out/test-classes;lib/*' ApplicationPrerequisitesCheck driver-present
 ```
+
+## Comparação de nomes de tabelas no schema
+
+O erro `Schema incompatível: vínculos/cascatas diferentes do contrato` foi reproduzido
+com o DDL original e o Connector/J distribuído no projeto. Com
+`lower_case_table_names=0`, o JDBC retornou `TAG` e `LOCAL_FILE`, e a validação
+passou. Com `lower_case_table_names=1`, retornou `tag` e `local_file`, e a mesma
+validação falhou, embora as três regras de exclusão fossem `CASCADE`.
+
+Primeiro foi testada uma adaptação mínima na comparação dos metadados. Ela passou
+nas duas instâncias. A implementação lê a política do próprio servidor e normaliza
+somente os nomes de tabelas e catálogos usados nessa comparação quando o servidor
+ignora maiúsculas e minúsculas. O modo sensível a maiúsculas do Linux permanece
+estrito: uma FK que aponta para outra tabela chamada `tag`, em vez de `TAG`, é recusada.
+Valores de caminhos, nomes de Tags e registros não são convertidos.
+
+Não houve alteração no DDL, nos scripts de preparação ou na configuração MySQL.
+Não é necessário recriar o banco, renomear tabelas ou mudar `lower_case_table_names`.
+Essa variável é definida na inicialização do diretório de dados; não deve ser
+alterada na instância existente para contornar o erro.
+[Referência MySQL: identificação de tabelas](https://dev.mysql.com/doc/refman/8.4/en/identifier-case-sensitivity.html).
+
+O validador também confere catálogo, tabela e coluna nas duas pontas, ordem das
+colunas da FK e regra de exclusão. Ele mantém duplicatas na comparação e não
+descarta vínculos sem `CASCADE`: os testes demonstraram que o validador antigo
+aceitava algumas FKs extras e referências a outro catálogo. A checagem do tamanho
+e da collation de `LOCAL_FILE.path` agora também é executada quando os metadados
+trazem o nome `local_file`.
+
+Uma incompatibilidade real de vínculos gera `database/runtime/logs/schema-*.log`,
+com versões do MySQL/JDBC, política de nomes, relações esperadas/encontradas e
+diferenças específicas. O popup permite copiar o caminho e abrir a pasta. Se o
+relatório não puder ser gravado, os detalhes SQL continuam disponíveis no popup,
+junto da falha de gravação. O validador não tenta corrigir relações automaticamente.
+
+Validação local em 20/09/2026: **33 cenários passaram** em MySQL 8.4.9 real com
+Connector/J 9.7.0 — 17 no modo 0 e 16 no modo 1. Incluem validação repetida sem
+alterar o DDL, operações pelos DAOs, cascatas, preservação de arquivos/Tags e da
+capitalização dos dados; ausência, duplicação e excesso de FKs; destino/coluna/
+catálogo/regra incorretos; FK composta; tamanho/collation de caminho, precisão
+temporal e índice incorretos; falha ao gravar log. Compilação e Javadoc passaram.
+
+Para repetir em Linux, com Python 3, JDK superior a 21 e os binários MySQL locais:
+
+```bash
+python3 tests/schema-contract.py --jdk /caminho/do/jdk
+```
+
+O teste cria dois diretórios temporários e escolhe portas locais livres, recusando
+3333. Confere o diretório de dados de cada servidor antes de executar o SQL de
+teste; encerra apenas os processos que iniciou e remove seus próprios temporários.
+`--probe` executa somente a verificação do schema original. A variável
+`TAG_FILE_MYSQL` pode indicar outra instalação dos binários de teste.
+
+O modo 1 reproduz no Linux a política de nomes usada no Windows. Não foi executado
+o MySQL nativo para Windows nem o popup Swing nesta validação. A aceitação final
+continua sendo abrir `Main` no Windows após atualizar e recompilar os fontes.
