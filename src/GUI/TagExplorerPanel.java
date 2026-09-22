@@ -179,6 +179,13 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
                 return label;
             }
         });
+        files.setCellRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focused) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focused);
+                if (value instanceof LocalFile file) label.setText(SwingLabels.localFile(file, true));
+                return label;
+            }
+        });
         events.subscribe(this);
     }
 

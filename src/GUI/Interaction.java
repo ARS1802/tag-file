@@ -7,6 +7,7 @@
  * - Interaction.choose(String message, String[] options): Solicita escolha explícita antes dos efeitos correspondentes.
  * - Interaction.text(String message, String initial): Solicita uma entrada de texto que pode ser cancelada.
  * - Interaction.color(String message, String initial): Solicita uma cor; por padrão delega para texto no formato #RRGGBB.
+ * - Interaction.extensions(String message, String initial): Solicita zero ou várias extensões; por padrão delega para texto para preservar implementações não Swing.
  * - Interaction.files(boolean multiple, Set<String> extensions): Seleciona arquivos reais; escolher pasta no diálogo não importa seu conteúdo.
  *
  * Consulte: doc/interface-e-fluxos.md — UI-01 a UI-03; doc/arquitetura-e-padroes.md — ARQ-06.
@@ -47,6 +48,14 @@ public interface Interaction {
      * @return cor escolhida em #RRGGBB, ou nulo ao cancelar
      */
     default String color(String message, String initial) { return text(message, initial); }
+    /**
+     * Solicita restrições de extensão sem limitar valores específicos aceitos pelo domínio.
+     *
+     * @param message finalidade da entrada
+     * @param initial lista inicial separada por vírgula; vazio aceita qualquer extensão
+     * @return lista separada por vírgula, texto vazio para qualquer extensão, ou nulo ao cancelar
+     */
+    default String extensions(String message, String initial) { return text(message, initial); }
     /**
      * Seleciona arquivos reais; escolher pasta no diálogo não importa seu conteúdo.
      *

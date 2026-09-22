@@ -18,9 +18,15 @@ import service.ActionGate;
 import service.ExplorerEventService;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Window;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.BorderFactory;
@@ -57,6 +63,10 @@ public final class MainWindow {
     private final JCheckBox sideBySide = new JCheckBox("Mostrar lado a lado");
     /** Indicador visível enquanto uma operação está em andamento. */
     private final JDialog loading;
+    /** Camada que impede ações no conteúdo principal sem bloquear os diálogos da ação corrente. */
+    private final JPanel blocker;
+    /** Evita piscar o indicador em operações que terminam antes de haver espera perceptível. */
+    private final Timer loadingDelay;
     /** Diálogos associados à janela principal. */
     private final SwingInteraction dialogs;
     /** Controle de operações compartilhado com os controladores. */
@@ -116,9 +126,31 @@ public final class MainWindow {
         content.add(views, BorderLayout.CENTER);
         frame.setContentPane(content);
 
+        // Intercepta entradas na janela principal enquanto a ação corrente continua usando seus próprios diálogos.
+        blocker = new JPanel() {
+            @Override protected void paintComponent(Graphics graphics) {
+                graphics.setColor(new Color(0, 0, 0, 28));
+                graphics.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        blocker.setOpaque(false);
+        blocker.setFocusable(true);
+        blocker.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        blocker.addMouseListener(new MouseAdapter() { });
+        blocker.addMouseMotionListener(new MouseMotionAdapter() { });
+        blocker.addMouseWheelListener(event -> event.consume());
+        blocker.addKeyListener(new KeyAdapter() {
+            @Override public void keyPressed(KeyEvent event) { event.consume(); }
+            @Override public void keyReleased(KeyEvent event) { event.consume(); }
+            @Override public void keyTyped(KeyEvent event) { event.consume(); }
+        });
+        blocker.setVisible(false);
+        frame.setGlassPane(blocker);
+
         // Informa progresso sem bloquear a thread de eventos; sem moldura própria, decorada por nós mesmos.
         loading = new JDialog(frame, false);
         loading.setUndecorated(true);
+        loading.setFocusableWindowState(false);
         loading.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         JPanel loadingContent = new JPanel(new BorderLayout(0, 12));
         loadingContent.setBorder(BorderFactory.createCompoundBorder(
@@ -134,6 +166,28 @@ public final class MainWindow {
         loadingContent.add(progress, BorderLayout.CENTER);
         loading.setContentPane(loadingContent);
         loading.setSize(340, 130);
+        loadingDelay = new Timer(300, event -> {
+            if (!gate.isBusy()) {
+                ((Timer) event.getSource()).stop();
+                return;
+            }
+            // Impede também um evento do Timer já enfileirado de cobrir um diálogo recém-aberto.
+            if (SwingInteraction.hasActiveDialogs()) return;
+            loading.setLocationRelativeTo(frame);
+            loading.setOpacity(0f);
+            loading.setVisible(true);
+            fadeIn(loading);
+            ((Timer) event.getSource()).stop();
+        });
+        loadingDelay.setRepeats(true);
+        SwingInteraction.setDialogActivityListener(active -> {
+            if (active) {
+                loadingDelay.stop();
+                loading.setVisible(false);
+            } else if (gate.isBusy() && blocker.isVisible()) {
+                loadingDelay.restart();
+            }
+        });
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         // Encaminha o fechamento para a liberação ordenada dos recursos.
@@ -151,13 +205,14 @@ public final class MainWindow {
     /** Exibe a janela e conecta o indicador de trabalho; chamar na EDT. */
     public void show() {
         gate.setBusyListener(busy -> {
-            loading.setLocationRelativeTo(frame);
             if (busy) {
-                loading.setOpacity(0f);
-                loading.setVisible(true);
-                fadeIn(loading);
+                blocker.setVisible(true);
+                blocker.requestFocusInWindow();
+                loadingDelay.restart();
             } else {
+                loadingDelay.stop();
                 loading.setVisible(false);
+                blocker.setVisible(false);
             }
             refresh.setEnabled(!busy);
             sideBySide.setEnabled(!busy);
@@ -203,8 +258,10 @@ public final class MainWindow {
     /** Remove observadores e descarta a interface; chamar na EDT. */
     public void dispose() {
         gate.setBusyListener(busy -> { });
+        SwingInteraction.setDialogActivityListener(active -> { });
         tags.dispose();
         local.dispose();
+        loadingDelay.stop();
         loading.dispose();
         frame.dispose();
     }

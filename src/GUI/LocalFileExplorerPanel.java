@@ -262,7 +262,7 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focused);
                 if (value instanceof NativeFile file) {
                     LocalFile local = registered.get(file.getPath());
-                    label.setText(file.getName() + "  " + (local == null ? "" : local.getTags().stream().map(Tag::getName).sorted().toList()));
+                    label.setText(SwingLabels.nativeFile(file, local));
                 }
                 return label;
             }
