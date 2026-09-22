@@ -6,7 +6,7 @@
  * Construtores e métodos declarados (inclusive privados e implementações anônimas):
  * - TagExplorerPanel.TagExplorerPanel(TagExplorerController controller, ExplorerEventService events, ActionGate gate, NativeDirectory directory): Monta e inscreve a apresentação na EDT, sem consultar SQL no construtor.
  * - DefaultListCellRenderer (anônima).getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focused): Prepara o rótulo visual sem acessar disco ou SQL.
- * - TagExplorerPanel.search(): Encaminha Tags selecionadas; nenhum filtro é reaplicado para mudar alvos de operações.
+ * - TagExplorerPanel.search(): Encaminha Tags selecionadas; nenhum filtro é reaplicado para mudar alvos de operações. Disparado ao selecionar Tags ou trocar AND/OR, sem botão dedicado.
  * - TagExplorerPanel.copy(boolean cut): Encaminha a intenção de copiar ou recortar o arquivo selecionado.
  * - TagExplorerPanel.withTag(Consumer<Tag> action): Encaminha a ação somente quando existe Tag selecionada.
  * - TagExplorerPanel.withFile(Consumer<LocalFile> action): Encaminha a ação somente quando existe arquivo selecionado.
@@ -29,6 +29,7 @@ import filter.*;
 import model.*;
 import service.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -75,7 +76,10 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
     /**
      * Seleção visual entre AND e OR.
      */
-    private final JComboBox<String> mode = new JComboBox<>(new String[]{"AND — todas", "OR — alguma"});
+    private final JComboBox<String> mode = new JComboBox<>(new String[]{
+            "Todas as etiquetas selecionadas",
+            "Qualquer etiqueta selecionada"
+    });
     /**
      * Pasta atual usada para navegação e colagem.
      */
@@ -99,6 +103,7 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
         tags.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         files.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JPanel tagActions = new JPanel(new GridLayout(0, 3, 4, 4));
+        tagActions.setBorder(BorderFactory.createTitledBorder("Etiquetas"));
         addButton(tagActions, "Nova etiqueta", () -> dialogs.observe(controller.createTag()));
         JButton editTagButton = addButton(tagActions, "Editar", () -> withTag(t -> dialogs.observe(controller.editTag(t.getId()))));
         JButton deleteTagButton = addButton(tagActions, "Excluir etiqueta…", () -> withTag(t -> dialogs.observe(controller.deleteTag(t.getId()))));
@@ -108,8 +113,11 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
         JCheckBox empty = new JCheckBox("Somente etiquetas vazias"); empty.addActionListener(e -> dialogs.observe(controller.filterTags(new TagFilter(empty.isSelected(), null, null)))); tagActions.add(empty);
         add(tagActions, BorderLayout.NORTH);
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(tags), new JScrollPane(files)); split.setResizeWeight(.32); add(split, BorderLayout.CENTER);
-        JPanel actions = new JPanel(new GridLayout(0, 3, 4, 4)); actions.add(mode);
-        addButton(actions, "Pesquisar", this::search);
+        JPanel actions = new JPanel(new GridLayout(0, 3, 4, 4));
+        actions.setBorder(BorderFactory.createTitledBorder("Ações do arquivo selecionado"));
+        mode.setToolTipText("Define como combinar as etiquetas selecionadas na pesquisa");
+        actions.add(mode);
+        mode.addActionListener(e -> search());
         JButton openButton = addButton(actions, "Abrir", () -> withFile(f -> dialogs.observe(controller.open(f.getNativeFile()))));
         JButton locateButton = addButton(actions, "Localizar", () -> withFile(f -> dialogs.observe(controller.locate(f.getNativeFile()))));
         JButton copyButton = addButton(actions, "Copiar", () -> copy(false));
@@ -119,6 +127,10 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
         JButton deleteFileButton = addButton(actions, "Apagar arquivo…", () -> withFile(f -> dialogs.observe(controller.deleteFile(f.getNativeFile()))));
         styleDestructive(deleteFileButton);
         JButton removeTagButton = addButton(actions, "Retirar etiqueta", () -> withFile(f -> withTag(t -> dialogs.observe(controller.removeTag(f.getId(), t.getId())))));
+        openButton.setToolTipText("Abrir arquivo (Enter ou duplo clique)");
+        copyButton.setToolTipText("Copiar arquivo (Ctrl+C)");
+        cutButton.setToolTipText("Recortar arquivo (Ctrl+X)");
+        renameButton.setToolTipText("Renomear arquivo (F2)");
         JPanel southWrap = new JPanel(new BorderLayout(4, 4));
         southWrap.add(actions, BorderLayout.CENTER);
         southWrap.add(status, BorderLayout.SOUTH);
@@ -133,12 +145,21 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
             fileDependent.forEach(b -> b.setEnabled(hasFile));
             removeTagButton.setEnabled(hasTag && hasFile);
         };
-        tags.addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) updateEnabled.run(); });
+        tags.addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) { updateEnabled.run(); search(); } });
         files.addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) updateEnabled.run(); });
         updateEnabled.run();
         SwingInteraction.bind(this, "ctrl C", "copy", () -> copy(false)); SwingInteraction.bind(this, "ctrl X", "cut", () -> copy(true));
         SwingInteraction.bind(this, "ctrl V", "paste", () -> dialogs.observe(controller.paste(directory)));
         SwingInteraction.bind(this, "F2", "rename", () -> withFile(f -> dialogs.observe(controller.rename(f.getNativeFile()))));
+        SwingInteraction.bind(files, "ENTER", "open-selected-file", openButton::doClick);
+        files.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent event) {
+                int index = files.locationToIndex(event.getPoint());
+                Rectangle bounds = index < 0 ? null : files.getCellBounds(index, index);
+                if (event.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(event)
+                        && bounds != null && bounds.contains(event.getPoint())) openButton.doClick();
+            }
+        });
         tags.setTransferHandler(new FileTransferHandler(gate, (paths, id) -> dialogs.observe(controller.associate(paths, id)))); tags.setDropMode(DropMode.ON);
         files.setTransferHandler(new FileTransferHandler(gate, null)); if (!GraphicsEnvironment.isHeadless()) files.setDragEnabled(true);
         tags.setCellRenderer(new DefaultListCellRenderer() {
@@ -155,6 +176,13 @@ public final class TagExplorerPanel extends JPanel implements ExplorerListener {
                     if (tag.isMissing()) label.setFont(label.getFont().deriveFont(Font.ITALIC));
                     if (!selected) label.setForeground(color);
                 }
+                return label;
+            }
+        });
+        files.setCellRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focused) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focused);
+                if (value instanceof LocalFile file) label.setText(SwingLabels.localFile(file, true));
                 return label;
             }
         });

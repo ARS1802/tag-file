@@ -11,6 +11,10 @@
  * - LocalFileExplorerPanel.createNode(NativeDirectory value): Monta nó da árvore com um filho-placeholder, sem consultar disco ainda.
  * - LocalFileExplorerPanel.ensureLoaded(DefaultMutableTreeNode node): Substitui o placeholder pelas subpastas reais na primeira vez que o nó é usado, sem repetir depois.
  * - LocalFileExplorerPanel.revealDirectory(NativeDirectory target): Desce pela árvore fixa carregando sob demanda até selecionar a pasta atual.
+ * - LocalFileExplorerPanel.promptBytes(String title, Long current): Pede um tamanho em bytes por pop-up com JSpinner, sem aceitar texto livre.
+ * - LocalFileExplorerPanel.promptDateTime(String title, LocalDateTime current): Pede uma data/hora UTC por pop-up com JSpinner, sem aceitar texto livre.
+ * - LocalFileExplorerPanel.labelBytes(JButton button, String prefix, Long value): Atualiza o rótulo do botão de bytes com o valor atual.
+ * - LocalFileExplorerPanel.labelDate(JButton button, String prefix, LocalDateTime value): Atualiza o rótulo do botão de data com o valor atual.
  * - TreeWillExpandListener (anônima).treeWillExpand(TreeExpansionEvent event): Carrega subpastas reais via NativeFileService somente na primeira expansão do nó.
  * - TreeWillExpandListener (anônima).treeWillCollapse(TreeExpansionEvent event): Não faz nada; estrutura já carregada permanece em memória.
  * - LocalFileExplorerPanel.DirNode.DirNode(NativeDirectory directory): Envolve a pasta para rotular o nó pelo nome, não pelo caminho inteiro.
@@ -37,9 +41,12 @@ import manager.LocalFileManager;
 import model.*;
 import service.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.*;
 import java.util.function.Consumer;
@@ -96,21 +103,37 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
      */
     private final JTextField extensions = new JTextField(8);
     /**
-     * Entrada do tamanho mínimo em bytes.
+     * Abre o pop-up de tamanho mínimo; rótulo mostra o valor atual.
      */
-    private final JTextField min = new JTextField(6);
+    private final JButton minButton = new JButton();
     /**
-     * Entrada do tamanho máximo em bytes.
+     * Abre o pop-up de tamanho máximo; rótulo mostra o valor atual.
      */
-    private final JTextField max = new JTextField(6);
+    private final JButton maxButton = new JButton();
     /**
-     * Entrada da modificação mínima UTC.
+     * Abre o pop-up de modificação mínima UTC; rótulo mostra o valor atual.
      */
-    private final JTextField from = new JTextField(16);
+    private final JButton fromButton = new JButton();
     /**
-     * Entrada da modificação máxima UTC.
+     * Abre o pop-up de modificação máxima UTC; rótulo mostra o valor atual.
      */
-    private final JTextField to = new JTextField(16);
+    private final JButton toButton = new JButton();
+    /**
+     * Tamanho mínimo em bytes escolhido no pop-up; nulo significa sem limite.
+     */
+    private Long minValue;
+    /**
+     * Tamanho máximo em bytes escolhido no pop-up; nulo significa sem limite.
+     */
+    private Long maxValue;
+    /**
+     * Modificação mínima UTC escolhida no pop-up; nula significa sem limite.
+     */
+    private LocalDateTime fromValue;
+    /**
+     * Modificação máxima UTC escolhida no pop-up; nula significa sem limite.
+     */
+    private LocalDateTime toValue;
     /**
      * Mapa de caminhos para cadastros reconstruídos; ausências continuam visíveis.
      */
@@ -137,9 +160,17 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
         if (!SwingUtilities.isEventDispatchThread()) throw new IllegalStateException("Crie o painel na EDT");
         this.controller = controller; this.events = events; this.directory = directory; this.dialogs = new SwingInteraction(this);
         setLayout(new BorderLayout(6, 6)); files.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); path.setText(directory.toString());
-        JPanel navigation = new JPanel(new GridLayout(0, 2, 4, 4)); navigation.add(new JLabel("Pasta")); navigation.add(path);
-        addButton(navigation, "Ir", () -> dialogs.observe(controller.navigate(new NativeDirectory(Path.of(path.getText())))));
-        addButton(navigation, "Subir", () -> { Path parent = this.directory.getPath().getParent(); if (parent != null) dialogs.observe(controller.navigate(new NativeDirectory(parent))); });
+        JPanel navigation = new JPanel(new BorderLayout(6, 0));
+        navigation.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        navigation.add(new JLabel("Pasta:"), BorderLayout.WEST);
+        navigation.add(path, BorderLayout.CENTER);
+        JPanel navigationActions = new JPanel(new GridLayout(1, 2, 4, 0));
+        JButton goButton = addButton(navigationActions, "Ir", () -> dialogs.observe(controller.navigate(new NativeDirectory(Path.of(path.getText())))));
+        goButton.setToolTipText("Ir para o caminho digitado");
+        JButton upButton = addButton(navigationActions, "Subir", () -> { Path parent = this.directory.getPath().getParent(); if (parent != null) dialogs.observe(controller.navigate(new NativeDirectory(parent))); });
+        upButton.setToolTipText("Subir para a pasta pai");
+        navigation.add(navigationActions, BorderLayout.EAST);
+        path.addActionListener(event -> goButton.doClick());
         add(navigation, BorderLayout.NORTH);
 
         tree.setRootVisible(true); tree.setShowsRootHandles(true);
@@ -159,26 +190,63 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
         });
         revealDirectory(directory);
 
-        JSplitPane browser = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(tree), new JScrollPane(files)); browser.setResizeWeight(.28); add(browser, BorderLayout.CENTER);
-        JPanel bottom = new JPanel(new GridLayout(0, 1));
+        JScrollPane treeScroll = new JScrollPane(tree); treeScroll.setPreferredSize(new Dimension(200, 0));
+        JSplitPane browser = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, new JScrollPane(files));
+        browser.setResizeWeight(.12); browser.setDividerLocation(200); add(browser, BorderLayout.CENTER);
+        JPanel bottom = new JPanel(new BorderLayout(4, 4));
         JPanel criteria = new JPanel(new GridLayout(0, 4, 4, 4));
-        criteria.add(new JLabel("Extensões")); criteria.add(extensions); criteria.add(new JLabel("Bytes mínimos")); criteria.add(min);
-        criteria.add(new JLabel("Bytes máximos")); criteria.add(max); criteria.add(new JLabel("Modificação desde (UTC)")); criteria.add(from);
-        criteria.add(new JLabel("Modificação até (UTC)")); criteria.add(to); from.setToolTipText("AAAA-MM-DDTHH:MM; vazio sem limite"); to.setToolTipText(from.getToolTipText());
+        criteria.setBorder(BorderFactory.createTitledBorder("Filtros"));
+        criteria.add(new JLabel("Extensões")); criteria.add(extensions); criteria.add(minButton); criteria.add(maxButton);
+        criteria.add(fromButton); criteria.add(toButton); addButton(criteria, "Filtrar", this::filter);
         extensions.setToolTipText("Separadas por vírgula, sem ponto (ex.: txt,pdf); <sem> aceita arquivo sem extensão; vazio aceita todas");
-        min.setToolTipText("Número inteiro de bytes; vazio sem limite"); max.setToolTipText(min.getToolTipText());
-        addButton(criteria, "Filtrar", this::filter); bottom.add(criteria);
-        JPanel actions = new JPanel(new GridLayout(0, 3, 4, 4));
+        minButton.addActionListener(e -> { minValue = promptBytes("Bytes mínimos", minValue); labelBytes(minButton, "Bytes mínimos", minValue); });
+        maxButton.addActionListener(e -> { maxValue = promptBytes("Bytes máximos", maxValue); labelBytes(maxButton, "Bytes máximos", maxValue); });
+        fromButton.addActionListener(e -> { fromValue = promptDateTime("Modificação desde", fromValue); labelDate(fromButton, "Modificação desde", fromValue); });
+        toButton.addActionListener(e -> { toValue = promptDateTime("Modificação até", toValue); labelDate(toButton, "Modificação até", toValue); });
+        labelBytes(minButton, "Bytes mínimos", null); labelBytes(maxButton, "Bytes máximos", null);
+        labelDate(fromButton, "Modificação desde", null); labelDate(toButton, "Modificação até", null);
+        criteria.setVisible(false);
+        bottom.add(criteria, BorderLayout.NORTH);
+        JPanel actions = new JPanel(new GridLayout(0, 4, 4, 4));
+        actions.setBorder(BorderFactory.createTitledBorder("Ações do arquivo selecionado"));
+        JToggleButton filterToggle = new JToggleButton("Mostrar filtros…");
+        filterToggle.setToolTipText("Exibir ou ocultar os critérios de filtragem");
+        filterToggle.addActionListener(event -> {
+            boolean visible = filterToggle.isSelected();
+            criteria.setVisible(visible);
+            filterToggle.setText(visible ? "Ocultar filtros" : "Mostrar filtros…");
+            bottom.revalidate();
+            bottom.repaint();
+        });
+        actions.add(filterToggle);
         JButton openButton = addButton(actions, "Abrir", () -> withFile(f -> dialogs.observe(controller.open(f))));
         JButton copyButton = addButton(actions, "Copiar", () -> copy(false));
         JButton cutButton = addButton(actions, "Recortar", () -> copy(true));
-        addButton(actions, "Colar", () -> dialogs.observe(controller.paste(this.directory)));
+        JButton pasteButton = addButton(actions, "Colar", () -> dialogs.observe(controller.paste(this.directory)));
         JButton moveButton = addButton(actions, "Mover para…", () -> withFile(f -> dialogs.observe(controller.chooseMove(f))));
         JButton renameButton = addButton(actions, "Renomear", () -> withFile(f -> dialogs.observe(controller.rename(f))));
-        JButton deleteButton = addButton(actions, "Apagar arquivo…", () -> withFile(f -> dialogs.observe(controller.delete(f)))); bottom.add(actions); bottom.add(status); add(bottom, BorderLayout.SOUTH);
+        JButton deleteButton = addButton(actions, "Apagar arquivo…", () -> withFile(f -> dialogs.observe(controller.delete(f))));
+        status.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
+        bottom.add(actions, BorderLayout.CENTER);
+        bottom.add(status, BorderLayout.SOUTH);
+        add(bottom, BorderLayout.SOUTH);
+        openButton.setToolTipText("Abrir arquivo (Enter ou duplo clique)");
+        copyButton.setToolTipText("Copiar arquivo (Ctrl+C)");
+        cutButton.setToolTipText("Recortar arquivo (Ctrl+X)");
+        pasteButton.setToolTipText("Colar nesta pasta (Ctrl+V)");
+        renameButton.setToolTipText("Renomear arquivo (F2)");
         SwingInteraction.bind(this, "ctrl C", "copy", () -> copy(false)); SwingInteraction.bind(this, "ctrl X", "cut", () -> copy(true));
         SwingInteraction.bind(this, "ctrl V", "paste", () -> dialogs.observe(controller.paste(this.directory)));
         SwingInteraction.bind(this, "F2", "rename", () -> withFile(f -> dialogs.observe(controller.rename(f))));
+        SwingInteraction.bind(files, "ENTER", "open-selected-file", openButton::doClick);
+        files.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent event) {
+                int index = files.locationToIndex(event.getPoint());
+                Rectangle bounds = index < 0 ? null : files.getCellBounds(index, index);
+                if (event.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(event)
+                        && bounds != null && bounds.contains(event.getPoint())) openButton.doClick();
+            }
+        });
         files.setTransferHandler(new FileTransferHandler(gate, null)); if (!GraphicsEnvironment.isHeadless()) files.setDragEnabled(true);
 
         List<JButton> fileDependent = List.of(openButton, copyButton, cutButton, moveButton, renameButton, deleteButton);
@@ -194,7 +262,7 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, selected, focused);
                 if (value instanceof NativeFile file) {
                     LocalFile local = registered.get(file.getPath());
-                    label.setText(file.getName() + "  " + (local == null ? "" : local.getTags().stream().map(Tag::getName).sorted().toList()));
+                    label.setText(SwingLabels.nativeFile(file, local));
                 }
                 return label;
             }
@@ -252,10 +320,62 @@ public final class LocalFileExplorerPanel extends JPanel implements ExplorerList
      */
     private void filter() {
         try {
-            dialogs.observe(controller.filter(new NativeFileFilter(LocalFileManager.parseExtensions(extensions.getText()), min.getText().isBlank() ? null : Long.valueOf(min.getText()),
-                    max.getText().isBlank() ? null : Long.valueOf(max.getText()), from.getText().isBlank() ? null : LocalDateTime.parse(from.getText()), to.getText().isBlank() ? null : LocalDateTime.parse(to.getText()))));
+            dialogs.observe(controller.filter(new NativeFileFilter(LocalFileManager.parseExtensions(extensions.getText()), minValue, maxValue, fromValue, toValue)));
         } catch (RuntimeException e) { dialogs.showFailure(e); }
     }
+    /**
+     * Pede um tamanho em bytes por pop-up com JSpinner, sem aceitar texto livre.
+     *
+     * @param title assunto mostrado no pop-up
+     * @param current valor atual, usado como ponto de partida e devolvido se cancelado
+     * @return valor definido, nulo para "sem limite", ou o valor atual se cancelado
+     */
+    private Long promptBytes(String title, Long current) {
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(current == null ? 0L : current, 0L, Long.MAX_VALUE, 1L));
+        ((JSpinner.NumberEditor) spinner.getEditor()).getTextField().setColumns(14);
+        Object[] options = {"Definir", "Sem limite", "Cancelar"};
+        int choice = JOptionPane.showOptionDialog(this, spinner, title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+        if (choice == 0) return (Long) spinner.getValue();
+        if (choice == 1) return null;
+        return current;
+    }
+    /**
+     * Pede uma data/hora UTC por pop-up com JSpinner, sem aceitar texto livre.
+     *
+     * @param title assunto mostrado no pop-up
+     * @param current valor atual, usado como ponto de partida e devolvido se cancelado
+     * @return valor definido, nulo para "sem limite", ou o valor atual se cancelado
+     */
+    private LocalDateTime promptDateTime(String title, LocalDateTime current) {
+        LocalDateTime base = current == null ? LocalDateTime.now(ZoneOffset.UTC).withSecond(0).withNano(0) : current;
+        SpinnerDateModel model = new SpinnerDateModel();
+        model.setValue(Date.from(base.toInstant(ZoneOffset.UTC)));
+        JSpinner spinner = new JSpinner(model);
+        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, "yyyy-MM-dd HH:mm");
+        editor.getFormat().setTimeZone(TimeZone.getTimeZone("UTC"));
+        spinner.setEditor(editor);
+        Object[] options = {"Definir", "Sem limite", "Cancelar"};
+        int choice = JOptionPane.showOptionDialog(this, spinner, title + " (UTC)", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+        if (choice == 0) return LocalDateTime.ofInstant(((Date) spinner.getValue()).toInstant(), ZoneOffset.UTC);
+        if (choice == 1) return null;
+        return current;
+    }
+    /**
+     * Atualiza o rótulo do botão de bytes com o valor atual.
+     *
+     * @param button botão a rotular
+     * @param prefix nome do critério
+     * @param value valor atual, ou nulo para "sem limite"
+     */
+    private static void labelBytes(JButton button, String prefix, Long value) { button.setText(prefix + ": " + (value == null ? "sem limite" : value + " bytes")); }
+    /**
+     * Atualiza o rótulo do botão de data com o valor atual.
+     *
+     * @param button botão a rotular
+     * @param prefix nome do critério
+     * @param value valor atual, ou nulo para "sem limite"
+     */
+    private static void labelDate(JButton button, String prefix, LocalDateTime value) { button.setText(prefix + ": " + (value == null ? "sem limite" : value.toString())); }
     /**
      * Encaminha a intenção de copiar ou recortar o arquivo selecionado.
      *

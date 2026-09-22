@@ -242,9 +242,9 @@ public final class LocalFileManager {
     public Tag createTag(Interaction interaction) throws Exception {
         String name = interaction.text("Nome da etiqueta", "");
         if (name == null) throw new CancellationException("Criação cancelada");
-        String color = interaction.text("Cor hexadecimal #RRGGBB", "#2864B4");
+        String color = interaction.color("Escolha a cor da etiqueta", "#2864B4");
         if (color == null) throw new CancellationException("Criação cancelada");
-        String extensions = interaction.text("Extensões separadas por vírgula; vazio aceita todas; <sem> aceita arquivo sem extensão", "");
+        String extensions = interaction.extensions("Extensões aceitas pela etiqueta", "");
         if (extensions == null) throw new CancellationException("Criação cancelada");
         Tag tag = factory.createTag(name.strip(), color.toUpperCase(Locale.ROOT), parseExtensions(extensions));
         confirmName(tag, interaction);
@@ -290,9 +290,9 @@ public final class LocalFileManager {
         if (old.isMissing()) throw new IllegalArgumentException("Etiqueta Ausente é protegida contra edição");
         String name = interaction.text("Nome", old.getName());
         if (name == null) throw new CancellationException();
-        String color = interaction.text("Cor #RRGGBB", old.getColor());
+        String color = interaction.color("Escolha a nova cor da etiqueta", old.getColor());
         if (color == null) throw new CancellationException();
-        String ext = interaction.text("Extensões; vazio aceita todas; <sem> representa ausência", String.join(",", old.getExtensions().stream().map(e -> e.isEmpty() ? "<sem>" : e).toList()));
+        String ext = interaction.extensions("Extensões aceitas pela etiqueta", String.join(",", old.getExtensions().stream().map(e -> e.isEmpty() ? "<sem>" : e).toList()));
         if (ext == null) throw new CancellationException();
         Tag edited = new Tag(id, name.strip(), color.toUpperCase(Locale.ROOT), parseExtensions(ext), old.getCreatedAt(), old.getLastFileTaggedAt(), old.isPredefined());
         confirmName(edited, interaction);
